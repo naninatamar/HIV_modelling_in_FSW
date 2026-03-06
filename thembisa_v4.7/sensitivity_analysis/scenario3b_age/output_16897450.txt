@@ -1,0 +1,5 @@
+THEMBISA.cpp: In member function ‘void Adult::UpdateProbTransmM()’:
+THEMBISA.cpp:897:78: error: invalid types ‘double[int]’ for array subscript
+  897 |                         exp(-4.0 * ClientPrev * (1.0 - ClientARTcov) * DurFSW[CurrYear - 1985]));
+      |                                                                              ^
+/var/spool/slurmd.spool/job16897450/slurm_script: line 13: ./mod3b_age_calib: No such file or directory
