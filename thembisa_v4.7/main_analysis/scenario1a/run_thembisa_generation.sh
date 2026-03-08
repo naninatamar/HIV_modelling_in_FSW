@@ -7,7 +7,7 @@
 #SBATCH --time=04:00:00
 
 # compiel the C++ program
-g++ -o mod1a_IRR_generation30 THEMBISA.cpp mersenne.cpp StatFunctions.cpp
+g++ -o mod1a_generation THEMBISA.cpp mersenne.cpp StatFunctions.cpp
 
 # Run the compiled executable
-./mod1a_IRR_generation30
+./mod1a_generation
