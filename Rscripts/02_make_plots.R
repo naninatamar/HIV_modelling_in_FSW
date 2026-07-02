@@ -138,7 +138,7 @@ p_HIV_inFSW = data_tot2 %>%
     mutate(Transmission_assumption = gsub("dynamically changing transmission risk", "exposure-dependent\ntransmission risk", Transmission_assumption)) %>% 
     ggplot(aes(x=Year, y=y)) + 
     theme_bw() + 
-    geom_line(aes(col = model, linetype = FSW_assumption), size = 1) + 
+    geom_line(aes(col = model, linetype = FSW_assumption), size = 0.8) + 
     geom_ribbon(aes(ymin = ymin, ymax = ymax, fill = model, alpha = model)) +
     scale_color_manual(values = c(colors_model), name="Scenario") + 
     scale_fill_manual(values = c(colors_model), name="Scenario") + 
@@ -253,7 +253,7 @@ p_paf = temp_data_correct %>%
     ggplot(aes(y=PAF_mean, x= year)) + 
     geom_rect(aes(xmin = 2026, xmax = 2045, ymin = 0, ymax = 1), 
               fill = "lightgray", alpha = 0.05, inherit.aes = FALSE) +
-    geom_line(aes(col = model, linetype = FSW_assumption), size = 1) + 
+    geom_line(aes(col = model, linetype = FSW_assumption), size = 0.8) + 
     geom_ribbon(data = temp_data_correct %>% filter(year <=2025), 
                 aes(ymin = PAF_q025, ymax = PAF_q975, fill = model, 
                     alpha = model)) +
@@ -332,7 +332,7 @@ distribution_paf = temp_data_correct_clients %>%
        ggplot(aes(y=PAF_mean, x= year)) + 
        geom_rect(aes(xmin = 2026, xmax = 2045, ymin = 0, ymax = 0.5), 
                  fill = "lightgray", alpha = 0.05, inherit.aes = FALSE) +
-       geom_line(aes(col = model, linetype = FSW_assumption), size = 1) + 
+       geom_line(aes(col = model, linetype = FSW_assumption), size = 0.8) + 
        geom_ribbon(data = distribution_paf %>% filter(year <=2025), 
                    aes(ymin = PAF_q025, ymax = PAF_q975, fill = model, alpha = model)) +
        geom_ribbon(data = distribution_paf %>% filter(year >2025), 
@@ -384,7 +384,7 @@ relPAF = relPAF %>%
     ggplot(aes(y=share_mean, x= year)) + 
     geom_rect(aes(xmin = 2026, xmax = 2045, ymin = 0, ymax = 1), 
               fill = "lightgray", alpha = 0.05, inherit.aes = FALSE) +
-    geom_line(aes(col = model, linetype = FSW_assumption), size = 1) + 
+    geom_line(aes(col = model, linetype = FSW_assumption), size = 0.8) + 
     geom_ribbon(data = relPAF %>% filter(year <=2025), 
                 aes(ymin = share_q025, ymax = share_q975, fill = model, alpha = model)) +
     geom_ribbon(data = relPAF %>% filter(year >2025), 
@@ -454,7 +454,7 @@ data_jones = data.frame(y = 4.9, lb = 3.4, ub = 7.1)
               aes(xmin = -Inf, xmax = Inf, ymin = lb, ymax = ub),
               alpha = 0.4,fill = "grey70",  inherit.aes = FALSE) + 
     geom_hline(yintercept = 4.9, lty = 2, col = "gray40") + 
-    geom_line(aes(col = model, linetype = FSW_assumption), size = 1) + 
+    geom_line(aes(col = model, linetype = FSW_assumption), size = 0.8) + 
     geom_ribbon(data = IRR_age %>% filter(year <=2025), 
                 aes(ymin = IRR_q025, ymax = IRR_q975, fill = model, alpha = model)) +
     geom_ribbon(data = IRR_age %>% filter(year >2025), 
