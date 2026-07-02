@@ -3,6 +3,7 @@ require(pals)
 require(tidyverse)
 require(ggh4x)
 require(grid)
+require(magick)
 
 source("01_data_management.R")
 ## colors for the six models: 
@@ -111,8 +112,13 @@ ptrans = Trans_assumptions %>%
 
 blank <- cowplot::ggdraw()   
 
-ptemp = cowplot::plot_grid(pfswchar, blank, nrow = 1, rel_widths = c(0.7, 1))
-cowplot::plot_grid(ptemp, ptrans, ncol = 1, labels = LETTERS, rel_heights = c(0.6, 0.4))
+ptemp = cowplot::plot_grid(blank,pfswchar,nrow = 1, labels = LETTERS, 
+                           label_size = 14, label_fontface = "bold", ncol = 2, rel_widths = c(1.9,1.0))
+
+
+cowplot::plot_grid(ptemp, ptrans, ncol = 1, labels = c("","C"), rel_heights = c(1.87, 1.1), 
+                   label_size =  14, label_fontface = "bold")
+
 
 ##############################################################
 ## Plot HIV incidence, prevalence and VL Suppression in FSW ## 
