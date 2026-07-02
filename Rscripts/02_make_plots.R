@@ -6,8 +6,8 @@ require(grid)
 
 source("01_data_management.R")
 ## colors for the six models: 
-
-colors_model = c(stepped2(2)[2], stepped(14)[14], stepped2(20)[15], stepped3(7)[7], stepped3(11)[9], stepped2(11)[c(7)])
+colors_model = c(stepped2(2)[2], stepped(14)[14], stepped2(20)[15], stepped3(7)[6], stepped3(11)[9], stepped2(11)[10])
+alpha_values= c(0.3, 0.35, 0.3, 0.35, 0.3, 0.35)
 
 ## colors for the sensitivity analysis
 colors_fswassumption = c("gray30", 
@@ -132,10 +132,11 @@ p_HIV_inFSW = data_tot2 %>%
     mutate(Transmission_assumption = gsub("dynamically changing transmission risk", "exposure-dependent\ntransmission risk", Transmission_assumption)) %>% 
     ggplot(aes(x=Year, y=y)) + 
     theme_bw() + 
-    geom_line(aes(col = model, linetype = FSW_assumption), size = 0.8) + 
-    geom_ribbon(aes(ymin = ymin, ymax = ymax, fill = model), alpha = 0.3) +
+    geom_line(aes(col = model, linetype = FSW_assumption), size = 1) + 
+    geom_ribbon(aes(ymin = ymin, ymax = ymax, fill = model, alpha = model)) +
     scale_color_manual(values = c(colors_model), name="Scenario") + 
     scale_fill_manual(values = c(colors_model), name="Scenario") + 
+    scale_alpha_manual(values = alpha_values, name = "Scenario")+
     labs(y=NULL, x = NULL) + 
     scale_y_continuous(labels = scales::percent,  limits = c(0,1)) + 
     facet_grid(type ~ Transmission_assumption, scales = "free_y", switch = "y") + 
@@ -164,7 +165,8 @@ p_HIV_inFSW = data_tot2 %>%
           strip.text = element_text(size = 10)) + 
     scale_linetype_manual(values = c(3,1), name = NULL) + 
     guides(color = guide_legend(direction = "horizontal", order = 1), 
-           fill = guide_legend(direction = "hoizontal", order = 1), 
+           fill = guide_legend(direction = "horizontal", order = 1), 
+           alpha = guide_legend(direction = "horizontal", order = 1), 
            linetype = guide_legend(order = 2), 
            shape = guide_legend(order = 3)) 
 
@@ -245,9 +247,10 @@ p_paf = temp_data_correct %>%
     ggplot(aes(y=PAF_mean, x= year)) + 
     geom_rect(aes(xmin = 2026, xmax = 2045, ymin = 0, ymax = 1), 
               fill = "lightgray", alpha = 0.05, inherit.aes = FALSE) +
-    geom_line(aes(col = model, linetype = FSW_assumption), size = 0.8) + 
+    geom_line(aes(col = model, linetype = FSW_assumption), size = 1) + 
     geom_ribbon(data = temp_data_correct %>% filter(year <=2025), 
-                aes(ymin = PAF_q025, ymax = PAF_q975, fill = model), alpha = 0.3) +
+                aes(ymin = PAF_q025, ymax = PAF_q975, fill = model, 
+                    alpha = model)) +
     geom_ribbon(data = temp_data_correct %>% filter(year >2025), 
                 aes(ymin = PAF_q025, ymax = PAF_q975, col = model),lty = 2, alpha = 0) +    
     facet_grid(facet_row~Transmission_assumption, switch = "y") + 
@@ -256,7 +259,8 @@ p_paf = temp_data_correct %>%
     theme_bw() + 
     scale_color_manual(values = colors_model) + 
     scale_fill_manual(values = colors_model) + 
-    labs(y=NULL, color = "Scenario", 
+    scale_alpha_manual(values = alpha_values) + 
+    labs(y=NULL, color = "Scenario", alpha = "Scenario",
          fill = "Scenario", x = NULL) + 
     scale_x_continuous(breaks = c(2000, 2005, 2015, 2025, 2035, 2045), limits = c(2000,2045)) + 
     scale_linetype_manual(values = c(3,1), name = NULL)  + 
@@ -274,7 +278,8 @@ p_paf = temp_data_correct %>%
           strip.text = element_text(size = 9)) + 
     scale_linetype_manual(values = c(3,1), name = NULL) + 
     guides(color = guide_legend(direction = "horizontal", order = 1), 
-           fill = guide_legend(direction = "hoizontal", order = 1), 
+           fill = guide_legend(direction = "horizontal", order = 1), 
+           alpha = guide_legend(direction = "horizontal", order = 1), 
            linetype = guide_legend(order = 2), 
            shape = guide_legend(order = 3)) + 
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
@@ -321,9 +326,9 @@ distribution_paf = temp_data_correct_clients %>%
        ggplot(aes(y=PAF_mean, x= year)) + 
        geom_rect(aes(xmin = 2026, xmax = 2045, ymin = 0, ymax = 0.5), 
                  fill = "lightgray", alpha = 0.05, inherit.aes = FALSE) +
-       geom_line(aes(col = model, linetype = FSW_assumption), size = 0.8) + 
+       geom_line(aes(col = model, linetype = FSW_assumption), size = 1) + 
        geom_ribbon(data = distribution_paf %>% filter(year <=2025), 
-                   aes(ymin = PAF_q025, ymax = PAF_q975, fill = model), alpha = 0.3) +
+                   aes(ymin = PAF_q025, ymax = PAF_q975, fill = model, alpha = model)) +
        geom_ribbon(data = distribution_paf %>% filter(year >2025), 
                    aes(ymin = PAF_q025, ymax = PAF_q975, col = model),lty = 2, alpha = 0) +    
        facet_grid(facet_row~Transmission_assumption, switch = "y", scales = "free") + 
@@ -332,7 +337,8 @@ distribution_paf = temp_data_correct_clients %>%
        theme_bw() + 
        scale_color_manual(values = colors_model) + 
        scale_fill_manual(values = colors_model) + 
-       labs(y=NULL, color = "Scenario", 
+       scale_alpha_manual(values = alpha_values)+ 
+       labs(y=NULL, color = "Scenario", alpha = "Scenario",
             fill = "Scenario", x = NULL) + 
        scale_x_continuous(breaks = c(2000, 2005, 2015, 2025, 2035, 2045), limits = c(2000,2045)) + 
        scale_linetype_manual(values = c(3,1), name = NULL)  + 
@@ -350,7 +356,8 @@ distribution_paf = temp_data_correct_clients %>%
              strip.text = element_text(size = 9)) + 
        scale_linetype_manual(values = c(3,1), name = NULL) + 
        guides(color = guide_legend(direction = "horizontal", order = 1), 
-              fill = guide_legend(direction = "hoizontal", order = 1), 
+              fill = guide_legend(direction = "horizontal", order = 1), 
+              alpha = guide_legend(direction = "horizontal", order = 1), 
               linetype = guide_legend(order = 2), 
               shape = guide_legend(order = 3)) + 
        theme(axis.text.x = element_text(angle = 45, hjust = 1)))
@@ -371,9 +378,9 @@ relPAF = relPAF %>%
     ggplot(aes(y=share_mean, x= year)) + 
     geom_rect(aes(xmin = 2026, xmax = 2045, ymin = 0, ymax = 1), 
               fill = "lightgray", alpha = 0.05, inherit.aes = FALSE) +
-    geom_line(aes(col = model, linetype = FSW_assumption), size = 0.8) + 
+    geom_line(aes(col = model, linetype = FSW_assumption), size = 1) + 
     geom_ribbon(data = relPAF %>% filter(year <=2025), 
-                aes(ymin = share_q025, ymax = share_q975, fill = model), alpha = 0.3) +
+                aes(ymin = share_q025, ymax = share_q975, fill = model, alpha = model)) +
     geom_ribbon(data = relPAF %>% filter(year >2025), 
                 aes(ymin = share_q025, ymax = share_q975, col = model),lty = 2, alpha = 0) +    
     facet_grid(.~Transmission_assumption, switch = "y") + 
@@ -381,7 +388,8 @@ relPAF = relPAF %>%
     theme_minimal() + 
     scale_color_manual(values = colors_model) + 
     scale_fill_manual(values = colors_model) + 
-    labs(y=NULL, color = "Scenario", 
+    scale_alpha_manual(values =alpha_values) + 
+    labs(y=NULL, color = "Scenario", alpha = "Scenario", 
          fill = "Scenario", x = NULL) + 
     scale_x_continuous(breaks = c(2000, 2015, 2025, 2035, 2045), limits = c(2000,2045)) + 
     scale_linetype_manual(values = c(3,1), name = NULL)  + 
@@ -399,7 +407,8 @@ relPAF = relPAF %>%
           strip.text = element_text(size = 9)) + 
     scale_linetype_manual(values = c(3,1), name = NULL) + 
     guides(color = guide_legend(direction = "horizontal", order = 1), 
-           fill = guide_legend(direction = "hoizontal", order = 1), 
+           fill = guide_legend(direction = "horizontal", order = 1), 
+           alpha = guide_legend(direction = "horizontal", order = 1), 
            linetype = guide_legend(order = 2), 
            shape = guide_legend(order = 3)) + 
     labs(y="Share of sex-work-related infections\noccurring in FSW (vs. clients)") + 
@@ -439,9 +448,9 @@ data_jones = data.frame(y = 4.9, lb = 3.4, ub = 7.1)
               aes(xmin = -Inf, xmax = Inf, ymin = lb, ymax = ub),
               alpha = 0.4,fill = "grey70",  inherit.aes = FALSE) + 
     geom_hline(yintercept = 4.9, lty = 2, col = "gray40") + 
-    geom_line(aes(col = model, linetype = FSW_assumption), size = 0.8) + 
+    geom_line(aes(col = model, linetype = FSW_assumption), size = 1) + 
     geom_ribbon(data = IRR_age %>% filter(year <=2025), 
-                aes(ymin = IRR_q025, ymax = IRR_q975, fill = model), alpha = 0.3) +
+                aes(ymin = IRR_q025, ymax = IRR_q975, fill = model, alpha = model)) +
     geom_ribbon(data = IRR_age %>% filter(year >2025), 
                 aes(ymin = IRR_q025, ymax = IRR_q975, col = model),lty = 2, alpha = 0) +    
     facet_grid(facet_row~Transmission_assumption, switch = "y") + 
@@ -449,7 +458,7 @@ data_jones = data.frame(y = 4.9, lb = 3.4, ub = 7.1)
     coord_cartesian(ylim = c(1,35)) + 
     scale_y_log10(breaks = c(1, 2, 5, 10, 20, 30)) +
     scale_x_continuous(breaks = c(1990,  2005, 2015, 2025), limits = c(1990,2025)) + 
-    
+    scale_alpha_manual(values = alpha_values) + 
     scale_color_manual(values = colors_model) + 
     scale_fill_manual(values = colors_model) + 
     theme(legend.position =  c(0.02, 0.15), 
@@ -466,11 +475,12 @@ data_jones = data.frame(y = 4.9, lb = 3.4, ub = 7.1)
           strip.text = element_text(size = 9)) + 
     scale_linetype_manual(values = c(3,1), name = NULL) + 
     guides(color = guide_legend(direction = "horizontal", order = 1), 
-           fill = guide_legend(direction = "hoizontal", order = 1), 
+           fill = guide_legend(direction = "horizontal", order = 1), 
+           alpha = guide_legend(direction = "horizontal", order = 1), 
            linetype = guide_legend(order = 2), 
            shape = guide_legend(order = 3)) + 
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
-    labs(y= NULL, x = NULL, col = "Scenario", fill = "Scenario"))
+    labs(y= NULL, x = NULL, col = "Scenario", fill = "Scenario", alpha = "Scenario"))
 
 
 ####################################
