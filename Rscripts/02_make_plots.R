@@ -4,6 +4,8 @@ require(tidyverse)
 require(ggh4x)
 require(grid)
 require(magick)
+library(ggdist)
+library(forcats)
 
 source("01_data_management.R")
 ## colors for the six models: 
@@ -47,6 +49,112 @@ tbl_modelparam = tbl_modelparam %>%
   rename(Parameter = name)
 
 tbl_modelparam
+
+
+###########################################################
+## Plot prior versus posteriors of calibrated paremeters ##
+########################################################### 
+
+set.seed(1)
+n_draws = 10000
+
+# Simualte priors
+
+prior_draws = bind_rows(
+  tibble(name = "Mean_gamma_sex_activity", value = rgamma(n_draws, 49.0, 1.40)),
+  tibble(name = "SD_gamma_sex_activity", value = rgamma(n_draws, 121.0, 5.5)),
+  tibble(name = "Assortativeness_mixing", value = rbeta(n_draws, 5.80, 3.87)),
+  tibble(name = "F_M_transmission_ST", value = rbeta(n_draws, 7.05, 874)),
+  tibble(name = "M_F_transsmission_ST", value = rbeta(n_draws, 5.68, 468)),
+  tibble(name = "RR_fertility", value = rgamma(n_draws, 100, 76.9)),
+  tibble(name = "HIV_prevalence_init_HR", value = 100*runif(n_draws, 0, 0.001)),
+  tibble(name = "FSW_contact_Hrmen", value = rgamma(n_draws, 5.444, 1.555)),
+  tibble(name = "HIV_diag_entrySW", value = runif(n_draws, 0, 1)),
+  tibble(name = "Client_FSW_transmission", value = rbeta(n_draws, 3.995, 3991)),
+  tibble(name = "FSW_start_epi",  value = rgamma(n_draws, 6.25, 1.25))
+) %>%
+  mutate(scenario = "Prior")
+
+modelparameters_post = modelparameters_post %>% mutate(
+  value = ifelse(name == "HIV_prevalence_init_HR", 0.1*value, value))
+
+param_data = bind_rows(modelparameters_post, prior_draws)
+
+scen_levels = c("Scenario 3b","Scenario 3a","Scenario 2b","Scenario 2a","Scenario 1b","Scenario 1a","Prior")
+param_data = param_data %>%
+  mutate(scenario = factor(scenario, levels = scen_levels))
+
+param_labels = c(
+  "Mean_gamma_sex_activity" = "Mean partnership formation",
+  "SD_gamma_sex_activity"  = "SD partnership formation",
+  "Assortativeness_mixing" = "Sexual mixing parameter",
+  "F_M_transmission_ST" = "Female-to-male transmission",
+  "M_F_transsmission_ST" = "Male-to-female transmission",
+  "RR_fertility" = "RR HIV+ fertility",
+  "HIV_prevalence_init_HR" = "Initial HIV prev. high-risk women (%)",
+  "FSW_contact_Hrmen" = "Annual rate of FSW contact",
+  "HIV_diag_entrySW" = "Reduction in SW entry after diagnosis",
+  "Client_FSW_transmission" = "Client-to-FSW transmission (tau)",
+  "FSW_start_epi" = "R (FSW start of epidemic)"
+)
+
+
+param_levels = c(
+  "Mean_gamma_sex_activity",
+  "SD_gamma_sex_activity" ,
+  "Assortativeness_mixing",
+  "F_M_transmission_ST" ,
+  "M_F_transsmission_ST",
+  "RR_fertility" ,
+  "HIV_prevalence_init_HR" ,
+  "FSW_contact_Hrmen",
+  "HIV_diag_entrySW",
+  "Client_FSW_transmission",
+  "FSW_start_epi")
+
+
+means_df = param_data %>%
+  group_by(name, scenario) %>%
+  summarise(mean = mean(value), .groups = "drop") %>%
+  mutate(y = as.numeric(scenario))
+
+param_data = param_data %>% 
+  mutate(name = factor(name, levels = param_levels))
+
+means_df = means_df %>% 
+  mutate(name = factor(name, levels = param_levels))
+
+p_calibparam <- ggplot(param_data, aes(x = value, y = scenario, fill = scenario)) +
+  stat_halfeye(
+    aes(),
+    normalize = "xy", 
+    height = 0.9,
+    alpha = 0.6,
+    point_interval = "mean_qi",
+    .width = 0.95,
+    slab_colour = "black",
+    slab_linewidth = 0.3,
+    interval_size = 3,
+    point_size = 1.2,
+    scale = 0.9) +
+  geom_segment(
+    data = means_df,
+    aes(x = mean, xend = mean, y = y, yend = y + 0.55),
+    colour = "grey15", linewidth = 0.4, inherit.aes = FALSE) +
+  facet_wrap(~ name, scales = "free_x", ncol = 3,
+             labeller = labeller(name = param_labels)) +
+  scale_fill_manual(values = rev(c("grey70", colors_model)))+
+  labs(x = NULL, y = NULL) +
+  theme_bw(base_size = 11) +
+  theme(
+    legend.position = "none",
+    strip.background = element_rect(fill = "grey90", colour = NA),
+    strip.text = element_text(size = 9),
+    panel.grid.minor = element_blank()
+  )
+
+p_calibparam
+
 
 ###################################
 ## Plot transmission assumption: ##
@@ -258,7 +366,8 @@ p_paf = temp_data_correct %>%
                 aes(ymin = PAF_q025, ymax = PAF_q975, fill = model, 
                     alpha = model)) +
     geom_ribbon(data = temp_data_correct %>% filter(year >2025), 
-                aes(ymin = PAF_q025, ymax = PAF_q975, col = model),lty = 2, alpha = 0) +    
+                aes(ymin = PAF_q025, ymax = PAF_q975, col = model),lty = 2, alpha = 0, 
+                show.legend = FALSE) +    
     facet_grid(facet_row~Transmission_assumption, switch = "y") + 
     coord_cartesian(ylim = c(0,0.5)) +
     scale_y_continuous(labels = scales::percent) +
@@ -336,7 +445,8 @@ distribution_paf = temp_data_correct_clients %>%
        geom_ribbon(data = distribution_paf %>% filter(year <=2025), 
                    aes(ymin = PAF_q025, ymax = PAF_q975, fill = model, alpha = model)) +
        geom_ribbon(data = distribution_paf %>% filter(year >2025), 
-                   aes(ymin = PAF_q025, ymax = PAF_q975, col = model),lty = 2, alpha = 0) +    
+                   aes(ymin = PAF_q025, ymax = PAF_q975, col = model),lty = 2, alpha = 0, 
+                   show.legend = FALSE) +    
        facet_grid(facet_row~Transmission_assumption, switch = "y", scales = "free") + 
        coord_cartesian(ylim = c(0,0.2)) +
        scale_y_continuous(labels = scales::percent) +
@@ -388,7 +498,8 @@ relPAF = relPAF %>%
     geom_ribbon(data = relPAF %>% filter(year <=2025), 
                 aes(ymin = share_q025, ymax = share_q975, fill = model, alpha = model)) +
     geom_ribbon(data = relPAF %>% filter(year >2025), 
-                aes(ymin = share_q025, ymax = share_q975, col = model),lty = 2, alpha = 0) +    
+                aes(ymin = share_q025, ymax = share_q975, col = model),lty = 2, alpha = 0, 
+                show.legend = FALSE) +    
     facet_grid(.~Transmission_assumption, switch = "y") + 
     scale_y_continuous(labels = scales::percent) + 
     theme_minimal() + 
@@ -458,7 +569,8 @@ data_jones = data.frame(y = 4.9, lb = 3.4, ub = 7.1)
     geom_ribbon(data = IRR_age %>% filter(year <=2025), 
                 aes(ymin = IRR_q025, ymax = IRR_q975, fill = model, alpha = model)) +
     geom_ribbon(data = IRR_age %>% filter(year >2025), 
-                aes(ymin = IRR_q025, ymax = IRR_q975, col = model),lty = 2, alpha = 0) +    
+                aes(ymin = IRR_q025, ymax = IRR_q975, col = model),lty = 2, alpha = 0, 
+                show.legend = FALSE) +    
     facet_grid(facet_row~Transmission_assumption, switch = "y") + 
     theme_bw() + 
     coord_cartesian(ylim = c(1,35)) + 
