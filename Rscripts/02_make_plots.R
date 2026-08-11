@@ -6,6 +6,9 @@ require(grid)
 require(magick)
 library(ggdist)
 library(forcats)
+library(cowplot)
+library(ggridges)
+
 
 source("01_data_management.R")
 ## colors for the six models: 
@@ -226,6 +229,147 @@ ptemp = cowplot::plot_grid(blank,pfswchar,nrow = 1, labels = LETTERS,
 
 cowplot::plot_grid(ptemp, ptrans, ncol = 1, labels = c("","C"), rel_heights = c(1.87, 1.1), 
                    label_size =  14, label_fontface = "bold")
+
+
+## adding the schematic of the FSW component in Thembisa:
+
+base <- theme_bw(base_size = 11, base_family = "Helvetica") +
+  theme(strip.background = element_rect(fill = "grey90", colour = NA),
+        strip.text = element_text(size = 10),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.grid.minor = element_blank(), 
+        legend.position = "none")
+
+param_labels <- as_labeller(c("Transmission risk" = "'Transmission risk'~beta*'('*italic(t)*')'"), label_parsed)
+
+ptrans2 = Trans_assumptions %>%
+  ggplot(aes(y = mean_tr, x = year)) +
+  geom_line(col = "#264653") +
+  geom_ribbon(aes(ymin = q025_tr, ymax = q075_tr), fill = "#264653", alpha = 0.3) +
+  geom_ribbon(aes(ymin = q0025_tr, ymax = q0975_tr), alpha = 0.2, fill = "#264653") +
+  facet_nested( rows = vars(parameter),
+                cols = vars(assumption, scenario),   
+                scales = "free_y",
+                switch = "y",
+                nest_line = TRUE, 
+                labeller = labeller(parameter = param_labels)) +
+  theme_bw() +
+  labs(y = NULL, x = NULL) +
+  scale_y_continuous(labels = scales::label_percent()) +
+  theme(ggh4x.facet.nestline = element_line(color = NA),
+        strip.background.x = element_rect(fill = "grey90", colour = NA),
+        strip.text.x = element_text(margin = margin(4, 6, 4, 6)))  + 
+  theme(legend.position = "none", 
+        axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  scale_x_continuous(breaks = c(1985, 1996, 2019, 2045))
+
+paramB_labels <- as_labeller(
+  c("FSW age (years)" = "'FSW age'~italic(a)*'('*italic(t)*')'~'(years)'",
+    "SW duration (years)" = "'SW duration'~1/lambda*'('*italic(t)*')'~'(years)'"), label_parsed)
+
+pfswchar2 = FSWchar_assumptions %>% ggplot(aes(y=mean, x = year))  +
+  geom_line(aes(col = parameter))  +
+  geom_ribbon(aes(ymin = q025, ymax =q075, fill = parameter), alpha = 0.3) + 
+  geom_ribbon(aes(ymin = q0025, ymax= q0975, fill = parameter), alpha = 0.2)  +
+  facet_nested(rows = vars(parameter),
+               cols = vars(assumption, scenario),  
+               scales = "free_y",
+               switch = "y",
+               nest_line = TRUE, 
+               labeller = labeller(parameter = paramB_labels, 
+                                   assumption = label_wrap_gen(width = 18))) +
+  theme_bw() +
+  theme(ggh4x.facet.nestline = element_line(color = NA),
+        strip.background.x = element_rect(fill = "grey90", colour = NA),
+        strip.text.x = element_text(margin = margin(4, 6, 4, 6))
+  ) +
+  labs(y=NULL, x=NULL) +
+  scale_color_manual(values = c("#E63946", "#F4A261" )) + 
+  scale_fill_manual(values = c("#E63946", "#F4A261")) + 
+  theme(legend.position = "none", 
+        axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  scale_x_continuous(breaks = c(1985, 1996, 2019,  2045))
+
+
+panelB <- pfswchar2 + theme(legend.position = "none") + base
+panelC <- ptrans2 + base
+
+schematic_img <- image_read_pdf("../data/model_schematic.pdf", density = 600)
+schematic_img <- image_trim(schematic_img)                         
+schematic_img <- image_border(schematic_img, "white", "60x60")    
+panelA <- ggdraw() + draw_image(schematic_img) + 
+  theme(panel.border  = element_blank(),
+        panel.background = element_blank(),
+        plot.background  = element_blank(),
+        plot.margin = margin(0, 0, 0, 0))
+
+
+top <- plot_grid(panelA, panelB,
+                 labels = c("A", "B"),
+                 label_size  = 14,
+                 label_fontface = "bold",
+                 ncol  = 2,
+                 rel_widths  = c(1.9, 1.0))
+
+final <- plot_grid(
+  top, panelC,
+  labels = c("", "C"),  
+  label_size  = 14,
+  label_fontface = "bold",
+  ncol  = 1,
+  rel_heights = c(1.87, 1.1))
+
+
+final
+
+#######################
+## Plot Bayes Factor ##
+#######################
+
+heat_map = logLik %>% 
+  mutate(choose= case_when(scenario_I == "3a" ~ 1, 
+                           scenario_I == "3b" & fav!= "3a" ~ 1, 
+                           scenario_I == "2a" & !fav %in% c("3b", "3a") ~ 1, 
+                           scenario_I == "2b" & !fav %in% c("3b", "3a", "2a") ~ 1,
+                           scenario_I == "1b" & !fav %in% c("3b", "3a", "2a", "2b") ~ 1, 
+                           scenario_I == "1a" & scenario_II == "1a" ~1,
+                           TRUE ~ 0)) %>% 
+  filter(choose == 1) %>% 
+  select(scenario_I, scenario_II, BF) %>% 
+  mutate(BF = case_when(BF== 1 ~ NA_real_, 
+                        TRUE ~ BF)) %>% 
+  mutate(BF_band = cut(BF,
+                       breaks = c(1, 3, 10, 30, 100, Inf),
+                       right = FALSE,
+                       labels = c("1–<3 (weak)",
+                                  "3–<10 (moderate)",
+                                  "10–<30 (strong)",
+                                  "30–<100 (very strong)",
+                                  "≥100 (decisive)")))
+
+heat_map %>% 
+  mutate(scenario_I = factor(scenario_I, levels = rev(c("3a", "3b", "2a", "2b", "1b", "1a"))), 
+         scenario_II = factor(scenario_II, levels = (c("3a", "3b", "2a", "2b", "1b", "1a")))) %>% 
+  ggplot(aes(x=scenario_II, y=scenario_I, fill = BF_band)) + 
+  geom_tile(color="white") + 
+  theme_bw() + 
+  geom_text(aes(label = round(BF,1))) + 
+  scale_fill_manual(
+    name = "Evidence (Jeffreys)",
+    breaks = c(
+      "1–<3 (weak)",
+      "3–<10 (moderate)",
+      "10–<30 (strong)",
+      "30–<100 (very strong)",
+      "≥100 (decisive)"), 
+    values = c(
+      "1–<3 (weak)"          = "#e6f0ff",
+      "3–<10 (moderate)"     = "#b3d1ff",
+      "10–<30 (strong)"      = "#80b3ff",
+      "30–<100 (very strong)"= "#4d94ff",
+      "≥100 (decisive)"      = "#1a75ff"), 
+    na.value = NA)  + 
+  labs(x=NULL, y= NULL)
 
 
 ##############################################################
@@ -761,4 +905,77 @@ HIVprevData %>%  filter(year !=2016) %>%
    guides(color = guide_legend(direction = "vertical", order = 1), 
           linetype = guide_legend(direction = "vertical", order = 1), 
           shape = guide_legend(direction = "vertical", order = 2))) 
+
+
+#####################################################
+### sensitivity analysis: open-cohort formulation ###
+#####################################################
+
+
+temp1 = data_tot2 %>% filter(model %in% c("model 3a", "model 3b")) %>% 
+  mutate(color = gsub("model ", "", model)) %>% 
+  mutate(color = paste0(color, " (Main analysis - closed cohort approximation)")) %>% 
+  filter(Year <=2025) %>% 
+  mutate(FSW_assumption = case_when(model %in% c("model 3a") ~ "a - constant FSW age & SW duration", 
+                                    TRUE ~ "b - increasing FSW age & SW duration")) %>% 
+  mutate(type = factor(type, levels = c("HIV incidence in FSW", 
+                                        "HIV prevalence in FSW", 
+                                        "VL suppression in FSW"))) %>% 
+  mutate(model = gsub("model", "Scenario", model))
+
+temp2 =  data_tot2_opencohort %>% 
+  filter(analysis == "open cohort (kappa=15)") %>% 
+  mutate(color = "Sensitivity analysis - open cohort") %>% 
+  filter(Year <=2025) %>% 
+  mutate(FSW_assumption = case_when(model %in% c("model 3a") ~ "a - constant FSW age & SW duration", 
+                                    TRUE ~ "b - increasing FSW age & SW duration")) %>% 
+  mutate(type = factor(type, levels = c("HIV incidence in FSW", 
+                                        "HIV prevalence in FSW", 
+                                        "VL suppression in FSW"))) %>% 
+  mutate(model = gsub("model", "Scenario", model))
+
+
+(p_HIV_inFSW_opencohort = temp1 %>% 
+    ggplot(aes(x=Year, y=y)) + 
+    theme_bw() + 
+    geom_line(aes(col = color), size = 0.8) + 
+    geom_ribbon(aes(ymin = ymin, ymax = ymax, fill = color), alpha = 0.3) +
+    
+    geom_line(data = temp2, aes(col = color), lty = 2, size = 0.8) + 
+    geom_ribbon(data = temp2, aes(ymin = ymin, ymax = ymax, col = color, fill= color), alpha = 0.0, 
+                lty = 3, size = 0.6) +
+    
+    scale_color_manual(values = c(colors_model[c(5,6)],"black"), name=NULL) + 
+    scale_fill_manual(values = c(colors_model[c(5,6)], "white"), name=NULL) +     
+    
+    labs(y=NULL, x = NULL) + 
+    scale_y_continuous(labels = scales::percent,  limits = c(0,1)) + 
+    facet_grid(type ~ model, scales = "free_y", switch = "y") + 
+    theme(legend.position = "top") +  
+    geom_pointrange(data = data_reshandjaff4 %>% mutate(type = factor(type, levels = c("HIV incidence in FSW", 
+                                                                                       "HIV prevalence in FSW", 
+                                                                                       "VL suppression in FSW"))),
+                    aes(y = est, ymin = lb, ymax = ub, x = year,
+                        shape = shape), size = 0.3) +
+    scale_shape_manual(values = c(1,8), breaks= c("Validation data", "Calibration data"), labels = c("Validation data", 
+                                                                                                     "Calibration data"),  name = NULL) +    
+    theme(legend.position = c(0.02, 0.95), 
+          legend.box = "horizontal",
+          legend.justification="left",
+          legend.margin=margin(-2,-2,-2,-2),
+          legend.box.margin=margin(-2,-2,-2,-2), 
+          legend.background = element_blank(), 
+          legend.spacing.x = unit(1.2, "cm")) + 
+    theme(plot.caption = element_text(hjust=0, face = "bold", size = 9),
+          legend.text = element_text(size = 9), 
+          legend.title = element_text(size =9), 
+          axis.text = element_text(size = 9), 
+          strip.text = element_text(size = 10)) + 
+    scale_linetype_manual(values = c(3,1), name = NULL) + 
+    guides(color = guide_legend(direction = "vertical", order = 1), 
+           fill = guide_legend(direction = "vertical", order = 1), 
+           alpha = guide_legend(direction = "vertical", order = 1), 
+           linetype = guide_legend(order = 2), 
+           shape = guide_legend(order = 3)))
+
 

@@ -2376,15 +2376,15 @@ FSWchar_constant = data.frame(year = 1985:2045,
 
 ### models *b*: 
 FSWchar_timevar = 
-       data.frame(year = 1996:2019, mean_age = c(26.4257, 26.6403,	26.8549,	27.0794,	27.3074,	
-       27.5418,	27.7807,	28.0261,	28.2608,	28.5060,	28.7488,	29.0033,	29.2575,	29.5073,	29.7679,
-       30.0221,	30.2870,	30.5627,	30.8417,	31.1231,	31.4050,	31.6977,	31.9844,	32.2761),
-       sd_age  = c(5.5413,	5.6170,	5.6947,	5.7722,	5.8500,	
-                   5.9298,	6.0081,	6.0910,	6.1715,	6.2534,	6.3359,	6.4194,	6.5050,	6.5899,	6.6776,	
-                   6.7655,	6.8555,	6.9439,	7.0375,	7.1321,	7.2305,	7.3283,	7.4246,	7.5166), 
-       mean_dur = c(2.6848,	2.8073,	2.9322,	3.0675,	3.2114,	
-                       3.3526,	3.5018,	3.6612,	3.8241,	3.9925,	4.1619,	4.3524,	4.5538,	4.7584,	4.9791,	
-                       5.2042,	5.4378,	5.6825,	5.9397,	6.2024,	6.4941,	6.7968,	7.1042,	7.4234))
+  data.frame(year = 1996:2019, mean_age = c(26.4257, 26.6403,	26.8549,	27.0794,	27.3074,	
+                                            27.5418,	27.7807,	28.0261,	28.2608,	28.5060,	28.7488,	29.0033,	29.2575,	29.5073,	29.7679,
+                                            30.0221,	30.2870,	30.5627,	30.8417,	31.1231,	31.4050,	31.6977,	31.9844,	32.2761),
+             sd_age  = c(5.5413,	5.6170,	5.6947,	5.7722,	5.8500,	
+                         5.9298,	6.0081,	6.0910,	6.1715,	6.2534,	6.3359,	6.4194,	6.5050,	6.5899,	6.6776,	
+                         6.7655,	6.8555,	6.9439,	7.0375,	7.1321,	7.2305,	7.3283,	7.4246,	7.5166), 
+             mean_dur = c(2.6848,	2.8073,	2.9322,	3.0675,	3.2114,	
+                          3.3526,	3.5018,	3.6612,	3.8241,	3.9925,	4.1619,	4.3524,	4.5538,	4.7584,	4.9791,	
+                          5.2042,	5.4378,	5.6825,	5.9397,	6.2024,	6.4941,	6.7968,	7.1042,	7.4234))
 
 FSWchar_timevar_tot = data.frame(year = 1985:1995, mean_age=26.4257, sd_age = 5.5413, mean_dur = 2.6848 ) %>% 
   bind_rows(FSWchar_timevar) %>% 
@@ -2425,19 +2425,19 @@ transmission_constant_1a =
 transmission_constant_1b = 
   data_frame(year = 1985:2045, 
              transm_assumps_conts[2, ])
-  
+
 transm_assumps_const = transmission_constant_1a %>% bind_rows(transmission_constant_1b)
 
 params_exp = transm_assumps %>% filter(scenario %in% c("Scenario 2a", "Scenario 2b"))
 params_exp = params_exp %>% pivot_wider(values_from = value, names_from = name)
 
 transm_assumps_exp_sc2a = data.frame(scenario = "Scenario 2a", 
-                                year = 1985:2045, 
-                                mean_tr = NA, 
-                                q0025_tr = NA, 
-                                q0975_tr =NA, 
-                                q025_tr = NA, 
-                                q075_tr = NA)
+                                     year = 1985:2045, 
+                                     mean_tr = NA, 
+                                     q0025_tr = NA, 
+                                     q0975_tr =NA, 
+                                     q025_tr = NA, 
+                                     q075_tr = NA)
 
 transm_assumps_exp_sc2b = data.frame(scenario = "Scenario 2b", 
                                      year = 1985:2045, 
@@ -2472,17 +2472,39 @@ transm_assumps_exp = transm_assumps_exp_sc2a %>%
 params_dyn = transm_assumps %>% filter(scenario %in% c("Scenario 3a", "Scenario 3b"))
 params_dyn = params_dyn %>% pivot_wider(values_from = value, names_from = name)
 
+# full posterior distribution of client prevalence and ART coverage
 
-# intermediate 
+mod3a_clientprev = read_excel("../data/PrevClients.xlsx", sheet = 1, col_names = TRUE) %>% as.tibble() %>% 
+  mutate(simulation = row_number()) %>% 
+  mutate(scenario = "Scenario 3a") %>% 
+  pivot_longer(1:71, values_to = "ClientPrev", names_to = "year")
 
-client_prev_ART = data_models_30y %>% filter(model %in% c("model 3a", "model 3b")) %>% 
-  select(Year, model, 
-         ART_coverage_in_FSW_clients_Mean, `ART_coverage_in_FSW_clients_95%LL`, `ART_coverage_in_FSW_clients_95%UL`, 
-         HIV_prevalence_in_male_clients_of_sex_workers_Mean,`HIV_prevalence_in_male_clients_of_sex_workers_95%LL`, `HIV_prevalence_in_male_clients_of_sex_workers_95%UL`) %>% 
-  mutate(across(everything(), ~replace_na(.x, 0)))
+mod3b_clientprev = read_excel("../data/PrevClients.xlsx", sheet = 2, col_names = TRUE) %>% as.tibble() %>% 
+  mutate(simulation = row_number()) %>% 
+  mutate(scenario = "Scenario 3b") %>% 
+  pivot_longer(1:71, values_to = "ClientPrev", names_to = "year")
 
-client_prev_ART = client_prev_ART %>% 
-  mutate(scenario = gsub("model", "Scenario", model))
+clientprev_post = mod3a_clientprev %>% 
+  bind_rows(mod3b_clientprev) 
+
+mod3a_artcovclient = read_excel("../data/ARTcoverageClients.xlsx", sheet = 1, col_names = TRUE) %>% as.tibble() %>% 
+  mutate(simulation = row_number()) %>% 
+  mutate(scenario = "Scenario 3a") %>% 
+  pivot_longer(1:71, values_to = "ARTcovClients", names_to = "year")
+
+mod3b_artcovclient = read_excel("../data/ARTcoverageClients.xlsx", sheet = 2, col_names = TRUE) %>% as.tibble() %>% 
+  mutate(simulation = row_number()) %>% 
+  mutate(scenario = "Scenario 3b") %>% 
+  pivot_longer(1:71, values_to = "ARTcovClients", names_to = "year")
+
+artcovclient_post = mod3a_artcovclient %>% 
+  bind_rows(mod3b_artcovclient) 
+
+client_post = artcovclient_post %>% 
+  left_join(clientprev_post)
+
+client_post = client_post %>% 
+  mutate(year = as.numeric(year))
 
 transm_assumps_dyn_sc3a = data.frame(scenario = "Scenario 3a", 
                                      year = 1985:2045, 
@@ -2500,17 +2522,16 @@ transm_assumps_dyn_sc3b = data.frame(scenario = "Scenario 3b",
                                      q025_tr = NA, 
                                      q075_tr = NA)
 
-
 for (i in 1985:2045){
-  client_prev_ART_temp = client_prev_ART %>% filter(Year == i)
+  client_post_temp = client_post %>% filter(year == i)
   dur_const = 3
   dur_change = FSWchar_timevar$mean_dur[FSWchar_timevar$year == i]
   
   params_dyn_temp = params_dyn %>%
-    left_join(client_prev_ART_temp) %>% 
-     mutate(baseprob = 
-              case_when(scenario == "Scenario 3a" ~Client_FSW_transmission * (1+(FSW_start_epi-1)*exp(-4.0*HIV_prevalence_in_male_clients_of_sex_workers_Mean * (1- ART_coverage_in_FSW_clients_Mean) * dur_const)), 
-                        scenario == "Scenario 3b" ~ Client_FSW_transmission * (1.0 + (FSW_start_epi -1) * exp(-4.0*HIV_prevalence_in_male_clients_of_sex_workers_Mean * (1.0-ART_coverage_in_FSW_clients_Mean) * dur_change))))
+    left_join(client_post_temp) %>% 
+    mutate(baseprob = 
+             case_when(scenario == "Scenario 3a" ~ Client_FSW_transmission * (1.0 + (FSW_start_epi-1) / (1 + 4.0*ClientPrev * (1- ARTcovClients) * dur_const)), 
+                       scenario == "Scenario 3b" ~ Client_FSW_transmission * (1.0 + (FSW_start_epi -1) /(1  + 4.0*ClientPrev * (1.0-ARTcovClients) * dur_change))))
   
   params_dyn_temp = params_dyn_temp %>% 
     group_by(scenario) %>% 
@@ -2565,6 +2586,251 @@ Trans_assumptions = transm_assumps_const %>%
   bind_rows(transm_assumps_exp) %>% 
   bind_rows(transm_assumps_dyn)
 
+
+#################################################
+## Calibration/Model diagnostics: Bayes Factor ##
+#################################################
+
+diag_mod1a = read_excel("../data/diagnostics.xlsx", sheet = 1, col_names = FALSE) 
+diag_mod1b = read_excel("../data/diagnostics.xlsx", sheet = 2, col_names = FALSE) 
+diag_mod2a = read_excel("../data/diagnostics.xlsx", sheet = 3, col_names = FALSE) 
+diag_mod2b = read_excel("../data/diagnostics.xlsx", sheet = 4, col_names = FALSE) 
+diag_mod3a = read_excel("../data/diagnostics.xlsx", sheet = 5, col_names = FALSE) 
+diag_mod3b = read_excel("../data/diagnostics.xlsx", sheet = 6, col_names = FALSE) 
+
+logIntL_1a = diag_mod1a[diag_mod1a[,2] != 0, 2]
+logIntL_1b = diag_mod1b[diag_mod1b[,2] != 0, 2]
+logIntL_2a = diag_mod2a[diag_mod2a[,2] != 0, 2]
+logIntL_2b = diag_mod2b[diag_mod2b[,2] != 0, 2]
+logIntL_3a = diag_mod3a[diag_mod3a[,2] != 0, 2]
+logIntL_3b = diag_mod3b[diag_mod3b[,2] != 0, 2]
+
+logLik = data.frame(scenario_I = c("1a", "1b", "2a", "2b", "3a", "3b"), 
+                    loglik_I = c(pull(tail(logIntL_1a, 1)),
+                                 pull(tail(logIntL_1b, 1)), 
+                                 pull(tail(logIntL_2a, 1)),
+                                 pull(tail(logIntL_2b, 1)), 
+                                 pull(tail(logIntL_3a, 1)), 
+                                 pull(tail(logIntL_3b, 1))))
+
+logLik_1a = logLik %>% 
+  rename(scenario_II = scenario_I, 
+         loglik_II = loglik_I) %>% 
+  mutate(scenario_I = "1a") 
+
+logLik_1b = logLik %>% 
+  rename(scenario_II = scenario_I, 
+         loglik_II = loglik_I) %>% 
+  mutate(scenario_I = "1b") 
+
+logLik_2a = logLik %>% 
+  rename(scenario_II = scenario_I, 
+         loglik_II = loglik_I) %>% 
+  mutate(scenario_I = "2a") 
+
+logLik_2b = logLik %>% 
+  rename(scenario_II = scenario_I, 
+         loglik_II = loglik_I) %>% 
+  mutate(scenario_I = "2b") 
+
+logLik_3a = logLik %>% 
+  rename(scenario_II = scenario_I, 
+         loglik_II = loglik_I) %>% 
+  mutate(scenario_I = "3a") 
+
+logLik_3b = logLik %>% 
+  rename(scenario_II = scenario_I, 
+         loglik_II = loglik_I) %>% 
+  mutate(scenario_I = "3b") 
+
+loglik_II = logLik_1a %>% 
+  bind_rows(logLik_1b) %>% 
+  bind_rows(logLik_2a) %>% 
+  bind_rows(logLik_2b) %>% 
+  bind_rows(logLik_3a) %>% 
+  bind_rows(logLik_3b)
+
+logLik = logLik %>% 
+  left_join(loglik_II)
+
+logLik = logLik %>% 
+  mutate(fav = case_when(loglik_I -(loglik_II) >0 ~ scenario_I, 
+                         TRUE ~ scenario_II)) %>% 
+  mutate(logBF = abs(loglik_I -(loglik_II))) %>% 
+  mutate(BF = exp(logBF))
+
+##################################################################
+### Sensitivity Analysis: Scenario 3 open-cohort implementation ##
+##################################################################
+
+mod3a_30y_kappa = read.csv("../data/mod3a_opencohort_kappa.csv", header=FALSE, sep=";") 
+mod3a_30y_kappa$V2[1] = "Mean"
+mod3a_30y_kappa = mod3a_30y_kappa %>% 
+  filter(V2 != "") %>% 
+  mutate(V1 = ifelse(V1 =="", NA_character_, V1)) %>% 
+  mutate(Indicator = V1) %>% 
+  mutate(Indicator = if_else(is.na(Indicator), lag(V1), Indicator)) %>% 
+  mutate(Indicator = if_else(is.na(Indicator), lag(Indicator), Indicator)) %>%
+  mutate(Indicator = gsub(" ", "_", Indicator)) %>% 
+  mutate(V2 = gsub(" ", "", V2)) %>% 
+  mutate(Indicator = paste(Indicator, V2, sep = "_")) %>% 
+  select(-V1, -V2) 
+mod3a_30y_kappa$Indicator[1] = "Year" 
+
+mod3a_30y_kappa = mod3a_30y_kappa[, -c(72:86)]
+rownames_temp = mod3a_30y_kappa$Indicator
+tt = mod3a_30y_kappa %>% select(-Indicator) 
+tt_trans = t(as.matrix(tt))
+rownames(tt_trans) = NULL
+mod3a_30y_kappa = tt_trans %>% as.tibble()
+colnames(mod3a_30y_kappa) = rownames_temp
+
+
+mod3a_30y_kappa = mod3a_30y_kappa %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  mutate(HIV_incidence_FSW_Mean = HIV_incidence_in_female_sex_workers_Mean) %>% 
+  mutate(HIV_incidence_FSW_LL = `HIV_incidence_in_female_sex_workers_95%LL`) %>% 
+  mutate(HIV_incidence_FSW_UL = `HIV_incidence_in_female_sex_workers_95%UL`) %>% 
+  mutate(HIV_prevalence_FSW_Mean = HIV_prevalence_in_females_sex_workers_Mean) %>% 
+  mutate(HIV_prevalence_FSW_LL = `HIV_prevalence_in_females_sex_workers_95%LL`) %>% 
+  mutate(HIV_prevalence_FSW_UL = `HIV_prevalence_in_females_sex_workers_95%UL`) %>% 
+  mutate(ART_coverage_FSW_Mean = ART_coverage_in_female_sex_workers_Mean) %>% 
+  mutate(ART_coverage_FSW_LL = `ART_coverage_in_female_sex_workers_95%LL`) %>% 
+  mutate(ART_coverage_FSW_UL = `ART_coverage_in_female_sex_workers_95%UL`) %>% 
+  mutate(HIV_prev_ANC_15_19_Mean = `HIV_prevalence_in_pregnant_women,_15-19_Mean`) %>% 
+  mutate(HIV_prev_ANC_15_19_LL = `HIV_prevalence_in_pregnant_women,_15-19_95%LL`) %>% 
+  mutate(HIV_prev_ANC_15_19_UL = `HIV_prevalence_in_pregnant_women,_15-19_95%UL`) %>% 
+  mutate(HIV_prev_ANC_20_24_Mean = `HIV_prevalence_in_pregnant_women,_20-24_Mean`) %>% 
+  mutate(HIV_prev_ANC_20_24_LL = `HIV_prevalence_in_pregnant_women,_20-24_95%LL`) %>% 
+  mutate(HIV_prev_ANC_20_24_UL = `HIV_prevalence_in_pregnant_women,_20-24_95%UL`) %>% 
+  mutate(HIV_prev_ANC_25_29_Mean = `HIV_prevalence_in_pregnant_women,_25-29_Mean`) %>% 
+  mutate(HIV_prev_ANC_25_29_LL = `HIV_prevalence_in_pregnant_women,_25-29_95%LL`) %>% 
+  mutate(HIV_prev_ANC_25_29_UL = `HIV_prevalence_in_pregnant_women,_25-29_95%UL`) %>% 
+  mutate(HIV_prev_ANC_30_34_Mean = `HIV_prevalence_in_pregnant_women,_30-34_Mean`) %>% 
+  mutate(HIV_prev_ANC_30_34_LL = `HIV_prevalence_in_pregnant_women,_30-34_95%LL`) %>% 
+  mutate(HIV_prev_ANC_30_34_UL = `HIV_prevalence_in_pregnant_women,_30-34_95%UL`) %>% 
+  mutate(HIV_prev_ANC_35_39_Mean = `HIV_prevalence_in_pregnant_women,_35-39_Mean`) %>% 
+  mutate(HIV_prev_ANC_35_39_LL = `HIV_prevalence_in_pregnant_women,_35-39_95%LL`) %>% 
+  mutate(HIV_prev_ANC_35_39_UL = `HIV_prevalence_in_pregnant_women,_35-39_95%UL`) %>% 
+  mutate(VL_supp_amongART_LL = `Fraction_of_FSWs_on_ART_who_are_virologically_suppressed_(RNA_count_<1000_copies/ml)_95%LL`) %>% 
+  mutate(VL_supp_amongART_UL = `Fraction_of_FSWs_on_ART_who_are_virologically_suppressed_(RNA_count_<1000_copies/ml)_95%UL`) %>% 
+  mutate(VL_supp_amongART_Mean = `Fraction_of_FSWs_on_ART_who_are_virologically_suppressed_(RNA_count_<1000_copies/ml)_Mean`)
+
+mod3a_30y_kappa = lapply(mod3a_30y_kappa, function(x) as.numeric(as.character(x))) %>% 
+  as_tibble()
+
+mod3a_30y_kappa = mod3a_30y_kappa %>% 
+  mutate(FSW_assumption = "a - constant FSW age and SW duration") %>% 
+  mutate(Transmission_assumption = "3 - dynamically changing transmission probability") %>% 
+  mutate(model = "model 3a") %>% 
+  mutate(analysis = "open cohort (kappa=15)")
+
+
+## Model 3b: exposure-dependent transmission risk, increasing age and SW duration in FSW 
+
+mod3b_30y_kappa = read.csv("../data/mod3b_opencohort_kappa.csv", header=FALSE, sep=";") 
+mod3b_30y_kappa$V2[1] = "Mean"
+mod3b_30y_kappa = mod3b_30y_kappa %>% 
+  filter(V2 != "") %>% 
+  mutate(V1 = ifelse(V1 =="", NA_character_, V1)) %>% 
+  mutate(Indicator = V1) %>% 
+  mutate(Indicator = if_else(is.na(Indicator), lag(V1), Indicator)) %>% 
+  mutate(Indicator = if_else(is.na(Indicator), lag(Indicator), Indicator)) %>%
+  # filter(!apply(across(3:88), 1, function(row){ all(is.na(row)) || all(row =="")})) %>% 
+  mutate(Indicator = gsub(" ", "_", Indicator)) %>% 
+  mutate(V2 = gsub(" ", "", V2)) %>% 
+  mutate(Indicator = paste(Indicator, V2, sep = "_")) %>% 
+  select(-V1, -V2) 
+mod3b_30y_kappa$Indicator[1] = "Year" 
+
+mod3b_30y_kappa = mod3b_30y_kappa[, -c(72:86)]
+rownames_temp = mod3b_30y_kappa$Indicator
+tt = mod3b_30y_kappa %>% select(-Indicator) 
+tt_trans = t(as.matrix(tt))
+rownames(tt_trans) = NULL
+mod3b_30y_kappa = tt_trans %>% as.tibble()
+colnames(mod3b_30y_kappa) = rownames_temp
+
+mod3b_30y_kappa = mod3b_30y_kappa %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  mutate(HIV_incidence_FSW_Mean = HIV_incidence_in_female_sex_workers_Mean) %>% 
+  mutate(HIV_incidence_FSW_LL = `HIV_incidence_in_female_sex_workers_95%LL`) %>% 
+  mutate(HIV_incidence_FSW_UL = `HIV_incidence_in_female_sex_workers_95%UL`) %>% 
+  mutate(HIV_prevalence_FSW_Mean = HIV_prevalence_in_females_sex_workers_Mean) %>% 
+  mutate(HIV_prevalence_FSW_LL = `HIV_prevalence_in_females_sex_workers_95%LL`) %>% 
+  mutate(HIV_prevalence_FSW_UL = `HIV_prevalence_in_females_sex_workers_95%UL`) %>% 
+  mutate(ART_coverage_FSW_Mean = ART_coverage_in_female_sex_workers_Mean) %>% 
+  mutate(ART_coverage_FSW_LL = `ART_coverage_in_female_sex_workers_95%LL`) %>% 
+  mutate(ART_coverage_FSW_UL = `ART_coverage_in_female_sex_workers_95%UL`) %>% 
+  mutate(HIV_prev_ANC_15_19_Mean = `HIV_prevalence_in_pregnant_women,_15-19_Mean`) %>% 
+  mutate(HIV_prev_ANC_15_19_LL = `HIV_prevalence_in_pregnant_women,_15-19_95%LL`) %>% 
+  mutate(HIV_prev_ANC_15_19_UL = `HIV_prevalence_in_pregnant_women,_15-19_95%UL`) %>% 
+  mutate(HIV_prev_ANC_20_24_Mean = `HIV_prevalence_in_pregnant_women,_20-24_Mean`) %>% 
+  mutate(HIV_prev_ANC_20_24_LL = `HIV_prevalence_in_pregnant_women,_20-24_95%LL`) %>% 
+  mutate(HIV_prev_ANC_20_24_UL = `HIV_prevalence_in_pregnant_women,_20-24_95%UL`) %>% 
+  mutate(HIV_prev_ANC_25_29_Mean = `HIV_prevalence_in_pregnant_women,_25-29_Mean`) %>% 
+  mutate(HIV_prev_ANC_25_29_LL = `HIV_prevalence_in_pregnant_women,_25-29_95%LL`) %>% 
+  mutate(HIV_prev_ANC_25_29_UL = `HIV_prevalence_in_pregnant_women,_25-29_95%UL`) %>% 
+  mutate(HIV_prev_ANC_30_34_Mean = `HIV_prevalence_in_pregnant_women,_30-34_Mean`) %>% 
+  mutate(HIV_prev_ANC_30_34_LL = `HIV_prevalence_in_pregnant_women,_30-34_95%LL`) %>% 
+  mutate(HIV_prev_ANC_30_34_UL = `HIV_prevalence_in_pregnant_women,_30-34_95%UL`) %>% 
+  mutate(HIV_prev_ANC_35_39_Mean = `HIV_prevalence_in_pregnant_women,_35-39_Mean`) %>% 
+  mutate(HIV_prev_ANC_35_39_LL = `HIV_prevalence_in_pregnant_women,_35-39_95%LL`) %>% 
+  mutate(HIV_prev_ANC_35_39_UL = `HIV_prevalence_in_pregnant_women,_35-39_95%UL`) %>% 
+  mutate(VL_supp_amongART_LL = `Fraction_of_FSWs_on_ART_who_are_virologically_suppressed_(RNA_count_<1000_copies/ml)_95%LL`) %>% 
+  mutate(VL_supp_amongART_UL = `Fraction_of_FSWs_on_ART_who_are_virologically_suppressed_(RNA_count_<1000_copies/ml)_95%UL`) %>% 
+  mutate(VL_supp_amongART_Mean = `Fraction_of_FSWs_on_ART_who_are_virologically_suppressed_(RNA_count_<1000_copies/ml)_Mean`)
+
+mod3b_30y_kappa = lapply(mod3b_30y_kappa, function(x) as.numeric(as.character(x))) %>% 
+  as_tibble()
+
+mod3b_30y_kappa = mod3b_30y_kappa %>% 
+  mutate(FSW_assumption = "b - changing FSW age and SW duration") %>% 
+  mutate(Transmission_assumption = "3 - dynamically changing transmission probability") %>% 
+  mutate(model = "model 3b") %>% 
+  mutate(analysis = "open cohort (kappa=15)")
+
+
+data_models_opencohort = mod3a_30y_kappa %>% 
+  bind_rows(mod3b_30y_kappa)
+
+
+### put in one data frame : 
+###########################
+
+art_data_opencohort = data_models_opencohort %>% select(Year, model, analysis,
+                                                        y = ART_coverage_FSW_Mean, 
+                                                        ymin = ART_coverage_FSW_LL, 
+                                                        ymax = ART_coverage_FSW_UL, 
+                                                        Transmission_assumption) %>% 
+  mutate(type = "ART coverage in FSW")
+
+inc_data_opencohort = data_models_opencohort %>% select(Year, model, analysis,
+                                                        y = HIV_incidence_FSW_Mean, 
+                                                        ymin = HIV_incidence_FSW_LL, 
+                                                        ymax = HIV_incidence_FSW_UL, Transmission_assumption) %>% 
+  mutate(type = "HIV incidence in FSW")
+
+
+prev_data_opencohort = data_models_opencohort %>% select(Year, model, analysis, 
+                                                         y = HIV_prevalence_FSW_Mean, 
+                                                         ymin = HIV_prevalence_FSW_LL, 
+                                                         ymax = HIV_prevalence_FSW_UL, 
+                                                         Transmission_assumption) %>% 
+  mutate(type = "HIV prevalence in FSW")
+
+vl_data_new_opencohort = data_models_opencohort %>% select(Year, model, analysis, 
+                                                           y_new = VL_supp_amongART_Mean) 
+
+vl_data_new_opencohort = vl_data_new_opencohort %>% left_join(art_data_opencohort) %>% 
+  mutate(y = y *y_new, 
+         ymin  = y_new*ymin, 
+         ymax = y_new*ymax) %>% 
+  mutate(type = "VL suppression in FSW")
+
+data_tot2_opencohort = inc_data_opencohort %>% bind_rows(prev_data_opencohort) %>% 
+  bind_rows(vl_data_new_opencohort)
+
 datalist = c(
   "data_tot2", 
   "data_models_30y",
@@ -2582,8 +2848,9 @@ datalist = c(
   "modelparameters_summary", 
   "modelparameters_post", 
   "FSWchar_assumptions",
-  "Trans_assumptions")
-  
+  "Trans_assumptions",
+  "logLik", 
+  "data_tot2_opencohort") 
   
 rm(list=setdiff(ls(), datalist))
 

@@ -18,6 +18,7 @@ Within thembisa_v4.7/:
 
 - main_analysis/ contains the six main scenarios (1a–3b)
 - sensitivity_analysis/ contains additional sensitivity analyses
+- sensitivity_analysis_opencohort/ contains additional sensitivity analyses 
 
 ## Analysis
 

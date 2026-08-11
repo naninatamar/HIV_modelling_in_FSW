@@ -893,8 +893,8 @@ void Adult::UpdateProbTransmM()
 		//if (CurrYear >= 1995){ BaseProb[6] = TransmFSW[1] * RelInfecRiskST[0][0][1]; }
 		//else{ BaseProb[6] = TransmFSW[1] * RelInfecRiskST[0][0][1] * (1.0 + (RRclientToFSW1985 - 1.0) * 
 		//	(1995 - CurrYear)/10.0); }
-		BaseProb[8] = TransmFSW[1] * RelInfecRiskST[0][0][1] * (1.0 + (RRclientToFSW1985 - 1.0) *
-			exp(-4.0 * ClientPrev * (1.0 - ClientARTcov) * DurFSW));
+		BaseProb[8] = TransmFSW[1] * RelInfecRiskST[0][0][1] * (1.0 + (RRclientToFSW1985 - 1.0) /
+			(1 + 4.0 * ClientPrev * (1.0 - ClientARTcov) * DurFSW));
 		// Adjustment factor of 4 chosen to give a decline similar to that in Kimani et al (2008)
 		//BaseProb[8] = TransmFSW[1] * RelInfecRiskST[0][0][1] * (1.0 + (RRclientToFSW1985 - 1.0) *
 		//	pow(0.75, CurrYear - 1985));
@@ -17003,6 +17003,8 @@ void RunSample()
 	HIVinc15plusF.RecordSample("HIVinc15plusF.txt");
 	HIVinc2000.RecordSample("HIVinc2000.txt");
 	HIVinc2010.RecordSample("HIVinc2010.txt");*/
+	PrevClients.RecordSample("PrevClients.txt");
+	ARTcoverageClients.RecordSample("ARTcoverageClients.txt");
 	PAFforCSW.RecordSample("PAFforCSW.txt");
 	NewHIVatBirth.RecordSample("NewHIVatBirth.txt");
 	NewHIVafterBirth.RecordSample("NewHIVafterBirth.txt");
