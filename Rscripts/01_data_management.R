@@ -2831,6 +2831,91 @@ vl_data_new_opencohort = vl_data_new_opencohort %>% left_join(art_data_opencohor
 data_tot2_opencohort = inc_data_opencohort %>% bind_rows(prev_data_opencohort) %>% 
   bind_rows(vl_data_new_opencohort)
 
+#### FSW selection factor (susceptibility adjustment) for closed- versus open-cohort formulations
+
+fsw_select_sc3a = data.frame(model = "model 3a",
+                             year = 1985:2045,
+                             FSWselect_median = NA,
+                             FSWselect_mean = NA,
+                             FSWselect_q025 = NA,
+                             FSWselect_q975 =NA)
+
+fsw_select_sc3b = data.frame(model = "model 3b",
+                             year = 1985:2045,
+                             FSWselect_median = NA,
+                             FSWselect_mean = NA,
+                             FSWselect_q025 = NA,
+                             FSWselect_q975 =NA)
+
+for (i in 1985:2045){
+  client_post_temp = client_post %>% filter(year == i)
+  dur_const = 3
+  dur_change = FSWchar_timevar$mean_dur[FSWchar_timevar$year == i]
+  
+  params_dyn_temp = params_dyn %>%
+    left_join(client_post_temp) %>%
+    mutate(fsw_select =
+             case_when(scenario == "Scenario 3a" ~ (1.0) / (1 + 4.0*ClientPrev * (1.0- ARTcovClients) * dur_const),
+                       scenario == "Scenario 3b" ~ (1.0) /(1  + 4.0*ClientPrev * (1.0-ARTcovClients) * dur_change)))
+  
+  params_dyn_temp = params_dyn_temp %>%
+    group_by(scenario) %>%
+    summarise(median_fswselect = median(fsw_select),
+              mean_fswselect = mean(fsw_select),
+              q0025_fsselect = quantile(fsw_select, 0.025),
+              q0975_fswselect = quantile(fsw_select, 0.975))
+  fsw_select_sc3a[i-1984, c(3:6)] = params_dyn_temp[1, -1]
+  fsw_select_sc3b[i-1984, c(3:6)] = params_dyn_temp[2, -1]
+}
+
+fsw_select_sc3a
+fsw_select_tot = fsw_select_sc3a %>% bind_rows(fsw_select_sc3b)
+
+
+FSWselect_3a_kappa = read_excel("../data/FSWselection.xlsx", sheet = 1, col_names =  TRUE) 
+FSWselect_3a_kappa = apply(FSWselect_3a_kappa, 2, function(x) {
+  c(FSWselect_mean = mean(x), 
+    FSWselect_median = median(x), 
+    FSWselect_q025 = quantile(x, 0.025), 
+    FSWselect_q975 = quantile(x, 0.975))
+})
+
+rownames(FSWselect_3a_kappa)[c(3,4)] = c("FSWselect_q025", "FSWselect_q975")
+FSWselect_3a_kappa <- as.data.frame(t(FSWselect_3a_kappa))
+
+FSWselect_3a_kappa$year <- as.numeric(rownames(FSWselect_3a_kappa))
+FSWselect_3a_kappa = FSWselect_3a_kappa %>% mutate(model = "model 3a (open cohort)")
+
+
+FSWselect_3b_kappa = read_excel("../data/FSWselection.xlsx", sheet = 2, col_names =  TRUE) 
+FSWselect_3b_kappa = apply(FSWselect_3b_kappa, 2, function(x) {
+  c(FSWselect_mean = mean(x), 
+    FSWselect_median = median(x), 
+    FSWselect_q025 = quantile(x, 0.025), 
+    FSWselect_q975 = quantile(x, 0.975))
+})
+
+rownames(FSWselect_3b_kappa)[c(3,4)] = c("FSWselect_q025", "FSWselect_q975")
+FSWselect_3b_kappa <- as.data.frame(t(FSWselect_3b_kappa))
+
+FSWselect_3b_kappa$year <- as.numeric(rownames(FSWselect_3b_kappa))
+FSWselect_3b_kappa = FSWselect_3b_kappa %>% mutate(model = "model 3b sens (open cohort)")
+
+
+FSWselection_all = fsw_select_tot %>% 
+  bind_rows(FSWselect_3a_kappa) %>% 
+  bind_rows(FSWselect_3b_kappa)
+
+
+FSWselection_all = FSWselection_all |> 
+  mutate(scenario = case_when(grepl("3a", model) ~ "Scenario 3a", 
+                              grepl("3b", model) ~ "Scenario 3b"))
+
+
+FSWselection_all = FSWselection_all |> filter(year <= 2045)
+
+
+
 datalist = c(
   "data_tot2", 
   "data_models_30y",
@@ -2849,6 +2934,7 @@ datalist = c(
   "modelparameters_post", 
   "FSWchar_assumptions",
   "Trans_assumptions",
+  "FSWselection_all", 
   "logLik", 
   "data_tot2_opencohort") 
   

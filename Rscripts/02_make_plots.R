@@ -978,4 +978,60 @@ temp2 =  data_tot2_opencohort %>%
            linetype = guide_legend(order = 2), 
            shape = guide_legend(order = 3)))
 
+#### comparison of the "selection-factor" between the closed and open-cohort formulation:
+
+temp1_select = FSWselection_all %>% filter(model %in% c("model 3a", "model 3b")) %>% 
+  mutate(color = gsub("model ", "", model)) %>% 
+  mutate(color = paste0(color, " (Main analysis - closed cohort approximation)")) %>% 
+  #filter(Year <=2025) %>% 
+  mutate(FSW_assumption = case_when(model %in% c("model 3a") ~ "a - constant FSW age & SW duration", 
+                                    TRUE ~ "b - increasing FSW age & SW duration")) 
+
+temp2_select =  FSWselection_all %>% 
+  filter(grepl("open cohort", model)) %>% 
+  mutate(color = "Sensitivity analysis - open cohort") %>% 
+  #filter(Year <=2025) %>% 
+  mutate(FSW_assumption = case_when(scenario %in% c("Scenario 3a") ~ "a - constant FSW age & SW duration", 
+                                    TRUE ~ "b - increasing FSW age & SW duration")) 
+
+temp1_select
+
+
+(p_FSW_selection = temp1_select %>% 
+    ggplot(aes(x=year, y=FSWselect_mean)) + 
+    geom_rect(aes(xmin = 2026, xmax = 2045, ymin = -0.1, ymax = 1.1), 
+              fill = "lightgray", alpha = 0.05, inherit.aes = FALSE) +
+    theme_bw() + 
+    geom_line(aes(col = color), size = 0.8) + 
+    geom_ribbon(aes(ymin = FSWselect_q025, ymax = FSWselect_q975, fill = color), alpha = 0.3) +
+    geom_line(data = temp2_select, aes(col = color), lty = 2, size = 0.8) + 
+    geom_ribbon(data = temp2_select, aes(ymin = FSWselect_q025, ymax = FSWselect_q975, col = color, fill= color), 
+                alpha = 0.0, 
+                lty = 3, size = 0.6) +
+    scale_color_manual(values = c(colors_model[c(5,6)],"black"), name=NULL) + 
+    scale_fill_manual(values = c(colors_model[c(5,6)], "white"), name=NULL) +     
+    labs(y=expression("Selection factor " * phi(t)), x = NULL) + 
+    coord_cartesian(ylim = c(0,1)) + 
+    scale_x_continuous(breaks = c(1985, 1995, 2005, 2015,2025, 2035, 2045)) + 
+    facet_grid(. ~ scenario, scales = "free_y", switch = "y") + 
+    theme(legend.position = "top") +  
+    theme(legend.position = c(0.65, 0.85), 
+          legend.box = "horizontal",
+          legend.justification="left",
+          legend.margin=margin(-2,-2,-2,-2),
+          legend.box.margin=margin(-2,-2,-2,-2), 
+          legend.background = element_blank(), 
+          legend.spacing.x = unit(1.2, "cm")) + 
+    theme(plot.caption = element_text(hjust=0, face = "bold", size = 9),
+          legend.text = element_text(size = 9), 
+          legend.title = element_text(size =9), 
+          axis.text = element_text(size = 9), 
+          strip.text = element_text(size = 10)) + 
+    scale_linetype_manual(values = c(3,1), name = NULL) + 
+    guides(color = guide_legend(direction = "vertical", order = 1), 
+           fill = guide_legend(direction = "vertical", order = 1), 
+           alpha = guide_legend(direction = "vertical", order = 1), 
+           linetype = guide_legend(order = 2), 
+           shape = guide_legend(order = 3))) 
+
 
