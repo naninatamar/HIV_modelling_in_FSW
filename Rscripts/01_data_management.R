@@ -2833,6 +2833,13 @@ data_tot2_opencohort = inc_data_opencohort %>% bind_rows(prev_data_opencohort) %
 
 #### FSW selection factor (susceptibility adjustment) for closed- versus open-cohort formulations
 
+
+
+
+# copare the "FSW selection" factor between closed and open cohort models:
+##########################################################################
+
+# closed cohort models
 fsw_select_sc3a = data.frame(model = "model 3a",
                              year = 1985:2045,
                              FSWselect_median = NA,
@@ -2871,6 +2878,8 @@ for (i in 1985:2045){
 fsw_select_sc3a
 fsw_select_tot = fsw_select_sc3a %>% bind_rows(fsw_select_sc3b)
 
+
+### open cohort models
 
 FSWselect_3a_kappa = read_excel("../data/FSWselection.xlsx", sheet = 1, col_names =  TRUE) 
 FSWselect_3a_kappa = apply(FSWselect_3a_kappa, 2, function(x) {
@@ -2915,6 +2924,368 @@ FSWselection_all = FSWselection_all |>
 FSWselection_all = FSWselection_all |> filter(year <= 2045)
 
 
+##############################################
+### open-cohort equilibrium approximation ####
+##############################################
+
+mod3a_30y_equi = read.csv("../data/mod3a_opencohort_equi.csv", header=FALSE, sep=";") 
+mod3a_30y_equi$V2[1] = "Mean"
+mod3a_30y_equi = mod3a_30y_equi %>% 
+  filter(V2 != "") %>% 
+  mutate(V1 = ifelse(V1 =="", NA_character_, V1)) %>% 
+  mutate(Indicator = V1) %>% 
+  mutate(Indicator = if_else(is.na(Indicator), lag(V1), Indicator)) %>% 
+  mutate(Indicator = if_else(is.na(Indicator), lag(Indicator), Indicator)) %>%
+  mutate(Indicator = gsub(" ", "_", Indicator)) %>% 
+  mutate(V2 = gsub(" ", "", V2)) %>% 
+  mutate(Indicator = paste(Indicator, V2, sep = "_")) %>% 
+  select(-V1, -V2) 
+mod3a_30y_equi$Indicator[1] = "Year" 
+
+mod3a_30y_equi = mod3a_30y_equi[, -c(72:86)]
+rownames_temp = mod3a_30y_equi$Indicator
+tt = mod3a_30y_equi %>% select(-Indicator) 
+tt_trans = t(as.matrix(tt))
+rownames(tt_trans) = NULL
+mod3a_30y_equi = tt_trans %>% as.tibble()
+colnames(mod3a_30y_equi) = rownames_temp
+
+mod3a_30y_equi = mod3a_30y_equi %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  mutate(HIV_incidence_FSW_Mean = HIV_incidence_in_female_sex_workers_Mean) %>% 
+  mutate(HIV_incidence_FSW_LL = `HIV_incidence_in_female_sex_workers_95%LL`) %>% 
+  mutate(HIV_incidence_FSW_UL = `HIV_incidence_in_female_sex_workers_95%UL`) %>% 
+  mutate(HIV_prevalence_FSW_Mean = HIV_prevalence_in_females_sex_workers_Mean) %>% 
+  mutate(HIV_prevalence_FSW_LL = `HIV_prevalence_in_females_sex_workers_95%LL`) %>% 
+  mutate(HIV_prevalence_FSW_UL = `HIV_prevalence_in_females_sex_workers_95%UL`) %>% 
+  mutate(ART_coverage_FSW_Mean = ART_coverage_in_female_sex_workers_Mean) %>% 
+  mutate(ART_coverage_FSW_LL = `ART_coverage_in_female_sex_workers_95%LL`) %>% 
+  mutate(ART_coverage_FSW_UL = `ART_coverage_in_female_sex_workers_95%UL`) %>% 
+  mutate(HIV_prev_ANC_15_19_Mean = `HIV_prevalence_in_pregnant_women,_15-19_Mean`) %>% 
+  mutate(HIV_prev_ANC_15_19_LL = `HIV_prevalence_in_pregnant_women,_15-19_95%LL`) %>% 
+  mutate(HIV_prev_ANC_15_19_UL = `HIV_prevalence_in_pregnant_women,_15-19_95%UL`) %>% 
+  mutate(HIV_prev_ANC_20_24_Mean = `HIV_prevalence_in_pregnant_women,_20-24_Mean`) %>% 
+  mutate(HIV_prev_ANC_20_24_LL = `HIV_prevalence_in_pregnant_women,_20-24_95%LL`) %>% 
+  mutate(HIV_prev_ANC_20_24_UL = `HIV_prevalence_in_pregnant_women,_20-24_95%UL`) %>% 
+  mutate(HIV_prev_ANC_25_29_Mean = `HIV_prevalence_in_pregnant_women,_25-29_Mean`) %>% 
+  mutate(HIV_prev_ANC_25_29_LL = `HIV_prevalence_in_pregnant_women,_25-29_95%LL`) %>% 
+  mutate(HIV_prev_ANC_25_29_UL = `HIV_prevalence_in_pregnant_women,_25-29_95%UL`) %>% 
+  mutate(HIV_prev_ANC_30_34_Mean = `HIV_prevalence_in_pregnant_women,_30-34_Mean`) %>% 
+  mutate(HIV_prev_ANC_30_34_LL = `HIV_prevalence_in_pregnant_women,_30-34_95%LL`) %>% 
+  mutate(HIV_prev_ANC_30_34_UL = `HIV_prevalence_in_pregnant_women,_30-34_95%UL`) %>% 
+  mutate(HIV_prev_ANC_35_39_Mean = `HIV_prevalence_in_pregnant_women,_35-39_Mean`) %>% 
+  mutate(HIV_prev_ANC_35_39_LL = `HIV_prevalence_in_pregnant_women,_35-39_95%LL`) %>% 
+  mutate(HIV_prev_ANC_35_39_UL = `HIV_prevalence_in_pregnant_women,_35-39_95%UL`) %>% 
+  mutate(VL_supp_amongART_LL = `Fraction_of_FSWs_on_ART_who_are_virologically_suppressed_(RNA_count_<1000_copies/ml)_95%LL`) %>% 
+  mutate(VL_supp_amongART_UL = `Fraction_of_FSWs_on_ART_who_are_virologically_suppressed_(RNA_count_<1000_copies/ml)_95%UL`) %>% 
+  mutate(VL_supp_amongART_Mean = `Fraction_of_FSWs_on_ART_who_are_virologically_suppressed_(RNA_count_<1000_copies/ml)_Mean`)
+
+mod3a_30y_equi = lapply(mod3a_30y_equi, function(x) as.numeric(as.character(x))) %>% 
+  as_tibble()
+
+mod3a_30y_equi = mod3a_30y_equi %>% 
+  mutate(FSW_assumption = "a - constant FSW age and SW duration") %>% 
+  mutate(Transmission_assumption = "3 - dynamically changing transmission probability") %>% 
+  mutate(model = "model 3a") %>% 
+  mutate(analysis = "open cohort approximation")
+
+
+## Model 3b: exposure-dependent transmission risk, increasing age and SW duration in FSW 
+
+mod3b_30y_equi = read.csv("../data/mod3b_opencohort_equi.csv", header=FALSE, sep=";") 
+mod3b_30y_equi$V2[1] = "Mean"
+mod3b_30y_equi = mod3b_30y_equi %>% 
+  filter(V2 != "") %>% 
+  mutate(V1 = ifelse(V1 =="", NA_character_, V1)) %>% 
+  mutate(Indicator = V1) %>% 
+  mutate(Indicator = if_else(is.na(Indicator), lag(V1), Indicator)) %>% 
+  mutate(Indicator = if_else(is.na(Indicator), lag(Indicator), Indicator)) %>%
+  # filter(!apply(across(3:88), 1, function(row){ all(is.na(row)) || all(row =="")})) %>% 
+  mutate(Indicator = gsub(" ", "_", Indicator)) %>% 
+  mutate(V2 = gsub(" ", "", V2)) %>% 
+  mutate(Indicator = paste(Indicator, V2, sep = "_")) %>% 
+  select(-V1, -V2) 
+mod3b_30y_equi$Indicator[1] = "Year" 
+
+mod3b_30y_equi = mod3b_30y_equi[, -c(72:86)]
+rownames_temp = mod3b_30y_equi$Indicator
+tt = mod3b_30y_equi %>% select(-Indicator) 
+tt_trans = t(as.matrix(tt))
+rownames(tt_trans) = NULL
+mod3b_30y_equi = tt_trans %>% as.tibble()
+colnames(mod3b_30y_equi) = rownames_temp
+
+mod3b_30y_equi = mod3b_30y_equi %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  mutate(HIV_incidence_FSW_Mean = HIV_incidence_in_female_sex_workers_Mean) %>% 
+  mutate(HIV_incidence_FSW_LL = `HIV_incidence_in_female_sex_workers_95%LL`) %>% 
+  mutate(HIV_incidence_FSW_UL = `HIV_incidence_in_female_sex_workers_95%UL`) %>% 
+  mutate(HIV_prevalence_FSW_Mean = HIV_prevalence_in_females_sex_workers_Mean) %>% 
+  mutate(HIV_prevalence_FSW_LL = `HIV_prevalence_in_females_sex_workers_95%LL`) %>% 
+  mutate(HIV_prevalence_FSW_UL = `HIV_prevalence_in_females_sex_workers_95%UL`) %>% 
+  mutate(ART_coverage_FSW_Mean = ART_coverage_in_female_sex_workers_Mean) %>% 
+  mutate(ART_coverage_FSW_LL = `ART_coverage_in_female_sex_workers_95%LL`) %>% 
+  mutate(ART_coverage_FSW_UL = `ART_coverage_in_female_sex_workers_95%UL`) %>% 
+  mutate(HIV_prev_ANC_15_19_Mean = `HIV_prevalence_in_pregnant_women,_15-19_Mean`) %>% 
+  mutate(HIV_prev_ANC_15_19_LL = `HIV_prevalence_in_pregnant_women,_15-19_95%LL`) %>% 
+  mutate(HIV_prev_ANC_15_19_UL = `HIV_prevalence_in_pregnant_women,_15-19_95%UL`) %>% 
+  mutate(HIV_prev_ANC_20_24_Mean = `HIV_prevalence_in_pregnant_women,_20-24_Mean`) %>% 
+  mutate(HIV_prev_ANC_20_24_LL = `HIV_prevalence_in_pregnant_women,_20-24_95%LL`) %>% 
+  mutate(HIV_prev_ANC_20_24_UL = `HIV_prevalence_in_pregnant_women,_20-24_95%UL`) %>% 
+  mutate(HIV_prev_ANC_25_29_Mean = `HIV_prevalence_in_pregnant_women,_25-29_Mean`) %>% 
+  mutate(HIV_prev_ANC_25_29_LL = `HIV_prevalence_in_pregnant_women,_25-29_95%LL`) %>% 
+  mutate(HIV_prev_ANC_25_29_UL = `HIV_prevalence_in_pregnant_women,_25-29_95%UL`) %>% 
+  mutate(HIV_prev_ANC_30_34_Mean = `HIV_prevalence_in_pregnant_women,_30-34_Mean`) %>% 
+  mutate(HIV_prev_ANC_30_34_LL = `HIV_prevalence_in_pregnant_women,_30-34_95%LL`) %>% 
+  mutate(HIV_prev_ANC_30_34_UL = `HIV_prevalence_in_pregnant_women,_30-34_95%UL`) %>% 
+  mutate(HIV_prev_ANC_35_39_Mean = `HIV_prevalence_in_pregnant_women,_35-39_Mean`) %>% 
+  mutate(HIV_prev_ANC_35_39_LL = `HIV_prevalence_in_pregnant_women,_35-39_95%LL`) %>% 
+  mutate(HIV_prev_ANC_35_39_UL = `HIV_prevalence_in_pregnant_women,_35-39_95%UL`) %>% 
+  mutate(VL_supp_amongART_LL = `Fraction_of_FSWs_on_ART_who_are_virologically_suppressed_(RNA_count_<1000_copies/ml)_95%LL`) %>% 
+  mutate(VL_supp_amongART_UL = `Fraction_of_FSWs_on_ART_who_are_virologically_suppressed_(RNA_count_<1000_copies/ml)_95%UL`) %>% 
+  mutate(VL_supp_amongART_Mean = `Fraction_of_FSWs_on_ART_who_are_virologically_suppressed_(RNA_count_<1000_copies/ml)_Mean`)
+
+mod3b_30y_equi = lapply(mod3b_30y_equi, function(x) as.numeric(as.character(x))) %>% 
+  as_tibble()
+
+mod3b_30y_equi = mod3b_30y_equi %>% 
+  mutate(FSW_assumption = "b - changing FSW age and SW duration") %>% 
+  mutate(Transmission_assumption = "3 - dynamically changing transmission probability") %>% 
+  mutate(model = "model 3b") %>% 
+  mutate(analysis = "open cohort approximation")
+
+
+data_models_equi = mod3a_30y_equi %>% 
+  bind_rows(mod3b_30y_equi)
+
+
+### put in one data frame : 
+###########################
+
+art_data_equi = data_models_equi %>% select(Year, model, analysis,
+                                            y = ART_coverage_FSW_Mean, 
+                                            ymin = ART_coverage_FSW_LL, 
+                                            ymax = ART_coverage_FSW_UL, 
+                                            Transmission_assumption) %>% 
+  mutate(type = "ART coverage in FSW")
+
+inc_data_equi = data_models_equi %>% select(Year, model, analysis,
+                                            y = HIV_incidence_FSW_Mean, 
+                                            ymin = HIV_incidence_FSW_LL, 
+                                            ymax = HIV_incidence_FSW_UL, 
+                                            Transmission_assumption) %>% 
+  mutate(type = "HIV incidence in FSW")
+
+
+prev_data_equi = data_models_equi %>% select(Year, model, analysis, 
+                                             y = HIV_prevalence_FSW_Mean, 
+                                             ymin = HIV_prevalence_FSW_LL, 
+                                             ymax = HIV_prevalence_FSW_UL, 
+                                             Transmission_assumption) %>% 
+  mutate(type = "HIV prevalence in FSW")
+
+vl_data_new_equi = data_models_equi %>% select(Year, model, analysis, 
+                                               y_new = VL_supp_amongART_Mean) 
+
+vl_data_new_equi = vl_data_new_equi %>% left_join(art_data_equi) %>% 
+  mutate(y = y *y_new, 
+         ymin  = y_new*ymin, 
+         ymax = y_new*ymax) %>% 
+  mutate(type = "VL suppression in FSW")
+
+data_tot2_equi = inc_data_equi %>% bind_rows(prev_data_equi) %>% 
+  bind_rows(vl_data_new_equi)
+
+
+#### FSW select equilibrium: 
+
+mod3a_clientprev_equi = read_excel("../data/PrevClients_equi.xlsx", sheet = 1, col_names = TRUE) %>% as.tibble() %>% 
+  mutate(simulation = row_number()) %>% 
+  mutate(scenario = "Scenario 3a") %>% 
+  pivot_longer(1:71, values_to = "ClientPrev", names_to = "year")
+
+mod3b_clientprev_equi = read_excel("../data/PrevClients_equi.xlsx", sheet = 2, col_names = TRUE) %>% as.tibble() %>% 
+  mutate(simulation = row_number()) %>% 
+  mutate(scenario = "Scenario 3b") %>% 
+  pivot_longer(1:71, values_to = "ClientPrev", names_to = "year")
+
+clientprev_post_equi = mod3a_clientprev_equi %>% 
+  bind_rows(mod3b_clientprev_equi) 
+
+mod3a_artcovclient_equi = read_excel("../data/ARTcoverageClients_equi.xlsx", sheet = 1, col_names = TRUE) %>% as.tibble() %>% 
+  mutate(simulation = row_number()) %>% 
+  mutate(scenario = "Scenario 3a") %>% 
+  pivot_longer(1:71, values_to = "ARTcovClients", names_to = "year")
+
+mod3b_artcovclient_equi = read_excel("../data/ARTcoverageClients_equi.xlsx", sheet = 2, col_names = TRUE) %>% as.tibble() %>% 
+  mutate(simulation = row_number()) %>% 
+  mutate(scenario = "Scenario 3b") %>% 
+  pivot_longer(1:71, values_to = "ARTcovClients", names_to = "year")
+
+artcovclient_post_equi = mod3a_artcovclient_equi %>% 
+  bind_rows(mod3b_artcovclient_equi) 
+
+client_post_equi = artcovclient_post_equi %>% 
+  left_join(clientprev_post_equi)
+
+client_post_equi = client_post_equi %>% 
+  mutate(year = as.numeric(year))
+
+
+fsw_select_equi = data.frame()
+for (i in 1985:2045){
+  dur_change = FSWchar_timevar$mean_dur[FSWchar_timevar$year == i]
+  temp = client_post_equi %>% 
+    filter(year == i) %>% 
+    mutate(dur = ifelse(scenario == "Scenario 3a", 3, dur_change), 
+           fsw_select = 2 / (1 + sqrt(1 + 4*15*ClientPrev*(1 - ARTcovClients)*dur))) %>% 
+    group_by(scenario) %>% 
+    summarise(FSWselect_median = median(fsw_select), 
+              FSWselect_mean = mean(fsw_select), 
+              FSWselect_q025 = quantile(fsw_select, 0.025), 
+              FSWselect_q975 = quantile(fsw_select, 0.975)) %>% 
+    mutate(year = i)
+  fsw_select_equi = bind_rows(fsw_select_equi, temp)
+}
+fsw_select_equi = fsw_select_equi %>% 
+  mutate(model = ifelse(scenario == "Scenario 3a", "model 3a (equilibrium)", "model 3b (equilibrium)"))
+
+
+fsw_select_tot_eq = fsw_select_equi |> filter(year <=2045) |> 
+  mutate(scenario = case_when(grepl("3a", model) ~ "Scenario 3a", 
+                              grepl("3b", model) ~ "Scenario 3b"))
+
+
+
+#############################################################################
+## PAFs open cohort and equilibrium approxiatmion and closed cohort approx ##
+#############################################################################
+
+PAF_mod3a_open = read_excel("../data/PAF_CSW_opencohort.xlsx", sheet = 1, col_names =  TRUE) 
+PAF_mod3a_open = apply(PAF_mod3a_open, 2, function(x) {
+  c(PAF_mean = mean(x), 
+    PAF_median = median(x), 
+    PAF_q025 = quantile(x, 0.025), 
+    PAF_q975 = quantile(x, 0.975))
+})
+
+rownames(PAF_mod3a_open)[c(3,4)] = c("PAF_q025", "PAF_q975")
+PAF_mod3a_open <- as.data.frame(t(PAF_mod3a_open))
+
+PAF_mod3a_open$year <- as.numeric(rownames(PAF_mod3a_open))
+PAF_mod3a_open = PAF_mod3a_open %>% 
+  mutate(FSW_assumption = "a - constant FSW age and SW duration") %>% 
+  mutate(Transmission_assumption = "3 - dynamically changing transmission probability") %>% 
+  mutate(model = "model 3a") |> 
+  mutate(approximation = "open cohort")
+
+PAF_mod3b_open = read_excel("../data/PAF_CSW_opencohort.xlsx", sheet = 2, col_names =  TRUE) 
+PAF_mod3b_open = apply(PAF_mod3b_open, 2, function(x) {
+  c(PAF_mean = mean(x), 
+    PAF_median = median(x), 
+    PAF_q025 = quantile(x, 0.025), 
+    PAF_q975 = quantile(x, 0.975))
+})
+
+rownames(PAF_mod3b_open)[c(3,4)] = c("PAF_q025", "PAF_q975")
+PAF_mod3b_open <- as.data.frame(t(PAF_mod3b_open))
+
+PAF_mod3b_open$year <- as.numeric(rownames(PAF_mod3b_open))
+PAF_mod3b_open = PAF_mod3b_open %>% 
+  mutate(FSW_assumption = "b - changing FSW age and SW duration") %>% 
+  mutate(Transmission_assumption = "3 - dynamically changing transmission probability") %>% 
+  mutate(model = "model 3b") |> 
+  mutate(approximation = "open cohort")
+
+## equilibirum approx
+
+
+PAF_mod3a_equi = read_excel("../data/PAF_CSW_equi.xlsx", sheet = 1, col_names =  TRUE) 
+PAF_mod3a_equi = apply(PAF_mod3a_equi, 2, function(x) {
+  c(PAF_mean = mean(x), 
+    PAF_median = median(x), 
+    PAF_q025 = quantile(x, 0.025), 
+    PAF_q975 = quantile(x, 0.975))
+})
+
+rownames(PAF_mod3a_equi)[c(3,4)] = c("PAF_q025", "PAF_q975")
+PAF_mod3a_equi <- as.data.frame(t(PAF_mod3a_equi))
+
+PAF_mod3a_equi$year <- as.numeric(rownames(PAF_mod3a_equi))
+PAF_mod3a_equi = PAF_mod3a_equi %>% 
+  mutate(FSW_assumption = "a - constant FSW age and SW duration") %>% 
+  mutate(Transmission_assumption = "3 - dynamically changing transmission probability") %>% 
+  mutate(model = "model 3a") |> 
+  mutate(approximation = "equilibrium")
+
+PAF_mod3b_equi = read_excel("../data/PAF_CSW_equi.xlsx", sheet = 2, col_names =  TRUE) 
+PAF_mod3b_equi = apply(PAF_mod3b_equi, 2, function(x) {
+  c(PAF_mean = mean(x), 
+    PAF_median = median(x), 
+    PAF_q025 = quantile(x, 0.025), 
+    PAF_q975 = quantile(x, 0.975))
+})
+
+rownames(PAF_mod3b_equi)[c(3,4)] = c("PAF_q025", "PAF_q975")
+PAF_mod3b_equi <- as.data.frame(t(PAF_mod3b_equi))
+
+PAF_mod3b_equi$year <- as.numeric(rownames(PAF_mod3b_equi))
+PAF_mod3b_equi = PAF_mod3b_equi %>% 
+  mutate(FSW_assumption = "b - changing FSW age and SW duration") %>% 
+  mutate(Transmission_assumption = "3 - dynamically changing transmission probability") %>% 
+  mutate(model = "model 3b") |> 
+  mutate(approximation = "equilibrium")
+
+#### closed cohort approx: 
+
+
+
+PAF_mod3a_closed = read_excel("../data/PAF_CSW.xlsx", sheet = 5, col_names =  TRUE) 
+PAF_mod3a_closed = apply(PAF_mod3a_closed, 2, function(x) {
+  c(PAF_mean = mean(x), 
+    PAF_median = median(x), 
+    PAF_q025 = quantile(x, 0.025), 
+    PAF_q975 = quantile(x, 0.975))
+})
+
+rownames(PAF_mod3a_closed)[c(3,4)] = c("PAF_q025", "PAF_q975")
+PAF_mod3a_closed <- as.data.frame(t(PAF_mod3a_closed))
+
+PAF_mod3a_closed$year <- as.numeric(rownames(PAF_mod3a_closed))
+PAF_mod3a_closed = PAF_mod3a_closed %>% 
+  mutate(FSW_assumption = "a - constant FSW age and SW duration") %>% 
+  mutate(Transmission_assumption = "3 - dynamically changing transmission probability") %>% 
+  mutate(model = "model 3a") |> 
+  mutate(approximation = "closed cohort")
+
+
+PAF_mod3b_closed = read_excel("../data/PAF_CSW.xlsx", sheet = 6, col_names =  TRUE) 
+PAF_mod3b_closed = apply(PAF_mod3b_closed, 2, function(x) {
+  c(PAF_mean = mean(x), 
+    PAF_median = median(x), 
+    PAF_q025 = quantile(x, 0.025), 
+    PAF_q975 = quantile(x, 0.975))
+})
+
+rownames(PAF_mod3b_closed)[c(3,4)] = c("PAF_q025", "PAF_q975")
+PAF_mod3b_closed <- as.data.frame(t(PAF_mod3b_closed))
+
+PAF_mod3b_closed$year <- as.numeric(rownames(PAF_mod3b_closed))
+PAF_mod3b_closed = PAF_mod3b_closed %>% 
+  mutate(FSW_assumption = "b - changing FSW age and SW duration") %>% 
+  mutate(Transmission_assumption = "3 - dynamically changing transmission probability") %>% 
+  mutate(model = "model 3b") |> 
+  mutate(approximation = "closed cohort")
+
+
+PAF_comparison = PAF_mod3a_closed |> 
+  bind_rows(PAF_mod3b_closed) |> 
+  bind_rows(PAF_mod3a_open) |> 
+  bind_rows(PAF_mod3b_open) |> 
+  bind_rows(PAF_mod3a_equi) |> 
+  bind_rows(PAF_mod3b_equi)
+
+
 
 datalist = c(
   "data_tot2", 
@@ -2936,8 +3307,12 @@ datalist = c(
   "Trans_assumptions",
   "FSWselection_all", 
   "logLik", 
-  "data_tot2_opencohort") 
+  "data_tot2_opencohort", 
+  "data_tot2_equi", 
+  "fsw_select_tot_eq",
+  "PAF_comparison") 
   
+
 rm(list=setdiff(ls(), datalist))
 
 

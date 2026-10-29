@@ -907,131 +907,162 @@ HIVprevData %>%  filter(year !=2016) %>%
           shape = guide_legend(direction = "vertical", order = 2))) 
 
 
-#####################################################
-### sensitivity analysis: open-cohort formulation ###
-#####################################################
 
 
-temp1 = data_tot2 %>% filter(model %in% c("model 3a", "model 3b")) %>% 
+#####################################################################
+### sensitivity analysis: open cohort and equilibrium approximation ###
+#####################################################################
+
+## order in the legend
+breaks_sens = c("3a (Main analysis - closed cohort approximation)",
+                "3b (Main analysis - closed cohort approximation)",
+                "Sensitivity analysis - open cohort",
+                "Sensitivity analysis - equilibrium approximation")
+
+## colours, linetypes and fills (named, so the order does not matter)
+colors_sens  = setNames(c(colors_model[c(5,6)], "black", "#7B3294"), breaks_sens)
+lty_sens     = setNames(c(1, 1, 2, 4), breaks_sens)
+fill_sens    = setNames(c(colors_model[c(5,6)], "transparent", "transparent"), breaks_sens)   # Fig G and H
+fill_sens_I  = setNames(c(colors_model[c(5,6)], "transparent", "#7B3294"), breaks_sens)       # Fig I
+
+### HIV incidence, prevalence and VL suppression ###
+
+temp1_sens = data_tot2 %>% filter(model %in% c("model 3a", "model 3b")) %>% 
   mutate(color = gsub("model ", "", model)) %>% 
   mutate(color = paste0(color, " (Main analysis - closed cohort approximation)")) %>% 
-  filter(Year <=2025) %>% 
-  mutate(FSW_assumption = case_when(model %in% c("model 3a") ~ "a - constant FSW age & SW duration", 
-                                    TRUE ~ "b - increasing FSW age & SW duration")) %>% 
-  mutate(type = factor(type, levels = c("HIV incidence in FSW", 
-                                        "HIV prevalence in FSW", 
-                                        "VL suppression in FSW"))) %>% 
-  mutate(model = gsub("model", "Scenario", model))
+  filter(Year <= 2025)
 
-temp2 =  data_tot2_opencohort %>% 
+temp2_sens = data_tot2_opencohort %>% 
   filter(analysis == "open cohort (kappa=15)") %>% 
   mutate(color = "Sensitivity analysis - open cohort") %>% 
-  filter(Year <=2025) %>% 
-  mutate(FSW_assumption = case_when(model %in% c("model 3a") ~ "a - constant FSW age & SW duration", 
-                                    TRUE ~ "b - increasing FSW age & SW duration")) %>% 
+  filter(Year <= 2025)
+
+temp3_sens = data_tot2_equi %>% 
+  mutate(color = "Sensitivity analysis - equilibrium approximation") %>% 
+  filter(Year <= 2025)
+
+## main analysis twice (once per comparison), alternatives once each
+temp_main = temp1_sens %>% mutate(comparison = "Main analysis vs open cohort") %>% 
+  bind_rows(temp1_sens %>% mutate(comparison = "Main analysis vs equilibrium approximation"))
+
+temp_alt = temp2_sens %>% mutate(comparison = "Main analysis vs open cohort") %>% 
+  bind_rows(temp3_sens %>% mutate(comparison = "Main analysis vs equilibrium approximation"))
+
+temp_sens = temp_main %>% bind_rows(temp_alt) %>% 
+  mutate(comparison = factor(comparison, levels = c("Main analysis vs open cohort", 
+                                                    "Main analysis vs equilibrium approximation"))) %>% 
   mutate(type = factor(type, levels = c("HIV incidence in FSW", 
                                         "HIV prevalence in FSW", 
                                         "VL suppression in FSW"))) %>% 
   mutate(model = gsub("model", "Scenario", model))
 
 
-(p_HIV_inFSW_opencohort = temp1 %>% 
-    ggplot(aes(x=Year, y=y)) + 
+(p_HIV_inFSW_sens = temp_sens %>% 
+    ggplot(aes(x = Year, y = y)) + 
     theme_bw() + 
-    geom_line(aes(col = color), size = 0.8) + 
-    geom_ribbon(aes(ymin = ymin, ymax = ymax, fill = color), alpha = 0.3) +
-    
-    geom_line(data = temp2, aes(col = color), lty = 2, size = 0.8) + 
-    geom_ribbon(data = temp2, aes(ymin = ymin, ymax = ymax, col = color, fill= color), alpha = 0.0, 
-                lty = 3, size = 0.6) +
-    
-    scale_color_manual(values = c(colors_model[c(5,6)],"black"), name=NULL) + 
-    scale_fill_manual(values = c(colors_model[c(5,6)], "white"), name=NULL) +     
-    
-    labs(y=NULL, x = NULL) + 
-    scale_y_continuous(labels = scales::percent,  limits = c(0,1)) + 
-    facet_grid(type ~ model, scales = "free_y", switch = "y") + 
-    theme(legend.position = "top") +  
+    geom_ribbon(data = temp_sens %>% filter(grepl("Main", color)), 
+                aes(ymin = ymin, ymax = ymax, fill = color), alpha = 0.3) +
+    geom_ribbon(data = temp_sens %>% filter(grepl("Sensitivity", color)), 
+                aes(ymin = ymin, ymax = ymax, col = color, fill = color), alpha = 0, lty = 3, linewidth = 0.5) +
+    geom_line(aes(col = color, linetype = color), linewidth = 0.8) + 
     geom_pointrange(data = data_reshandjaff4 %>% mutate(type = factor(type, levels = c("HIV incidence in FSW", 
                                                                                        "HIV prevalence in FSW", 
                                                                                        "VL suppression in FSW"))),
-                    aes(y = est, ymin = lb, ymax = ub, x = year,
-                        shape = shape), size = 0.3) +
-    scale_shape_manual(values = c(1,8), breaks= c("Validation data", "Calibration data"), labels = c("Validation data", 
-                                                                                                     "Calibration data"),  name = NULL) +    
-    theme(legend.position = c(0.02, 0.95), 
-          legend.box = "horizontal",
-          legend.justification="left",
-          legend.margin=margin(-2,-2,-2,-2),
-          legend.box.margin=margin(-2,-2,-2,-2), 
-          legend.background = element_blank(), 
-          legend.spacing.x = unit(1.2, "cm")) + 
-    theme(plot.caption = element_text(hjust=0, face = "bold", size = 9),
+                    aes(y = est, ymin = lb, ymax = ub, x = year, shape = shape), size = 0.3) +
+    scale_shape_manual(values = c(1,8), breaks = c("Validation data", "Calibration data"), name = NULL) + 
+    scale_color_manual(values = colors_sens, breaks = breaks_sens, name = NULL) + 
+    scale_fill_manual(values = fill_sens, breaks = breaks_sens, name = NULL) + 
+    scale_linetype_manual(values = lty_sens, breaks = breaks_sens, name = NULL) +    
+    labs(y = NULL, x = NULL) + 
+    scale_y_continuous(labels = scales::percent, limits = c(0,1)) + 
+    facet_grid(type ~ model + comparison, switch = "y") + 
+    theme(legend.position = "top", 
           legend.text = element_text(size = 9), 
-          legend.title = element_text(size =9), 
-          axis.text = element_text(size = 9), 
-          strip.text = element_text(size = 10)) + 
-    scale_linetype_manual(values = c(3,1), name = NULL) + 
-    guides(color = guide_legend(direction = "vertical", order = 1), 
-           fill = guide_legend(direction = "vertical", order = 1), 
-           alpha = guide_legend(direction = "vertical", order = 1), 
-           linetype = guide_legend(order = 2), 
-           shape = guide_legend(order = 3)))
+          axis.text = element_text(size = 8), 
+          strip.text = element_text(size = 9)) + 
+    guides(color = guide_legend(nrow = 2, order = 1), 
+           fill = guide_legend(nrow = 2, order = 1), 
+           linetype = guide_legend(nrow = 2, order = 1), 
+           shape = guide_legend(order = 2)))
 
-#### comparison of the "selection-factor" between the closed and open-cohort formulation:
+
+### PAF sex work ###
+
+temp_paf_sens = PAF_comparison %>% 
+  filter(year >= 2000, year <= 2045) %>% 
+  mutate(color = case_when(approximation == "closed cohort" ~ paste0(gsub("model ", "", model), 
+                                                                     " (Main analysis - closed cohort approximation)"), 
+                           approximation == "open cohort" ~ "Sensitivity analysis - open cohort", 
+                           approximation == "equilibrium" ~ "Sensitivity analysis - equilibrium approximation")) %>% 
+  mutate(model = gsub("model", "Scenario", model))
+
+
+(p_paf_sens = temp_paf_sens %>% 
+    ggplot(aes(x = year, y = PAF_mean)) + 
+    theme_bw() + 
+    geom_rect(aes(xmin = 2026, xmax = 2045, ymin = 0, ymax = 1), 
+              fill = "lightgray", alpha = 0.05, inherit.aes = FALSE) +
+    geom_ribbon(data = temp_paf_sens %>% filter(approximation == "closed cohort"), 
+                aes(ymin = PAF_q025, ymax = PAF_q975, fill = color), alpha = 0.3) +
+    geom_line(aes(col = color, linetype = color), linewidth = 0.8) + 
+    scale_color_manual(values = colors_sens, breaks = breaks_sens, limits = breaks_sens, name = NULL) + 
+    scale_fill_manual(values = fill_sens, breaks = breaks_sens, limits = breaks_sens, name = NULL) + 
+    scale_linetype_manual(values = lty_sens, breaks = breaks_sens, limits = breaks_sens, name = NULL) +
+    coord_cartesian(ylim = c(0, 0.3)) + 
+    scale_y_continuous(labels = scales::percent) + 
+    scale_x_continuous(breaks = c(2000, 2005, 2015, 2025, 2035, 2045)) + 
+    facet_grid(. ~ model) + 
+    labs(x = NULL, y = "PAF sex work") + 
+    theme(legend.position = "top", 
+          legend.text = element_text(size = 9), 
+          axis.text = element_text(size = 8), 
+          strip.text = element_text(size = 9)) + 
+    guides(color = guide_legend(nrow = 2, order = 1), 
+           fill = guide_legend(nrow = 2, order = 1), 
+           linetype = guide_legend(nrow = 2, order = 1)))
+
+
+### Selection factor phi(t) ###
 
 temp1_select = FSWselection_all %>% filter(model %in% c("model 3a", "model 3b")) %>% 
   mutate(color = gsub("model ", "", model)) %>% 
-  mutate(color = paste0(color, " (Main analysis - closed cohort approximation)")) %>% 
-  #filter(Year <=2025) %>% 
-  mutate(FSW_assumption = case_when(model %in% c("model 3a") ~ "a - constant FSW age & SW duration", 
-                                    TRUE ~ "b - increasing FSW age & SW duration")) 
+  mutate(color = paste0(color, " (Main analysis - closed cohort approximation)"))
 
-temp2_select =  FSWselection_all %>% 
+temp2_select = FSWselection_all %>% 
   filter(grepl("open cohort", model)) %>% 
-  mutate(color = "Sensitivity analysis - open cohort") %>% 
-  #filter(Year <=2025) %>% 
-  mutate(FSW_assumption = case_when(scenario %in% c("Scenario 3a") ~ "a - constant FSW age & SW duration", 
-                                    TRUE ~ "b - increasing FSW age & SW duration")) 
+  mutate(color = "Sensitivity analysis - open cohort")
 
-temp1_select
+temp3_select = fsw_select_tot_eq %>% 
+  mutate(color = "Sensitivity analysis - equilibrium approximation")
 
+temp_select = temp1_select %>% bind_rows(temp2_select) %>% bind_rows(temp3_select)
 
-(p_FSW_selection = temp1_select %>% 
-    ggplot(aes(x=year, y=FSWselect_mean)) + 
+(p_FSW_selection = temp_select %>% 
+    ggplot(aes(x = year, y = FSWselect_mean)) + 
+    theme_bw() + 
     geom_rect(aes(xmin = 2026, xmax = 2045, ymin = -0.1, ymax = 1.1), 
               fill = "lightgray", alpha = 0.05, inherit.aes = FALSE) +
-    theme_bw() + 
-    geom_line(aes(col = color), size = 0.8) + 
-    geom_ribbon(aes(ymin = FSWselect_q025, ymax = FSWselect_q975, fill = color), alpha = 0.3) +
-    geom_line(data = temp2_select, aes(col = color), lty = 2, size = 0.8) + 
-    geom_ribbon(data = temp2_select, aes(ymin = FSWselect_q025, ymax = FSWselect_q975, col = color, fill= color), 
-                alpha = 0.0, 
-                lty = 3, size = 0.6) +
-    scale_color_manual(values = c(colors_model[c(5,6)],"black"), name=NULL) + 
-    scale_fill_manual(values = c(colors_model[c(5,6)], "white"), name=NULL) +     
-    labs(y=expression("Selection factor " * phi(t)), x = NULL) + 
+    geom_ribbon(data = temp1_select, aes(ymin = FSWselect_q025, ymax = FSWselect_q975, fill = color), alpha = 0.3) +
+    geom_ribbon(data = temp3_select, aes(ymin = FSWselect_q025, ymax = FSWselect_q975, fill = color), alpha = 0.25) +
+    geom_ribbon(data = temp2_select, aes(ymin = FSWselect_q025, ymax = FSWselect_q975, col = color, fill = color), 
+                alpha = 0, lty = 3, linewidth = 0.5) +
+    geom_line(aes(col = color, linetype = color), linewidth = 0.8) + 
+    scale_color_manual(values = colors_sens, breaks = breaks_sens, name = NULL) + 
+    scale_fill_manual(values = fill_sens_I, breaks = breaks_sens, name = NULL) + 
+    scale_linetype_manual(values = lty_sens, breaks = breaks_sens, name = NULL) +
+    labs(y = expression("Selection factor " * phi(t)), x = NULL) + 
     coord_cartesian(ylim = c(0,1)) + 
-    scale_x_continuous(breaks = c(1985, 1995, 2005, 2015,2025, 2035, 2045)) + 
-    facet_grid(. ~ scenario, scales = "free_y", switch = "y") + 
-    theme(legend.position = "top") +  
+    scale_x_continuous(breaks = c(1985, 1995, 2005, 2015, 2025, 2035, 2045)) + 
+    facet_grid(. ~ scenario) + 
     theme(legend.position = c(0.65, 0.85), 
-          legend.box = "horizontal",
-          legend.justification="left",
-          legend.margin=margin(-2,-2,-2,-2),
-          legend.box.margin=margin(-2,-2,-2,-2), 
+          legend.justification = "left",
+          legend.margin = margin(-2,-2,-2,-2),
+          legend.box.margin = margin(-2,-2,-2,-2), 
           legend.background = element_blank(), 
-          legend.spacing.x = unit(1.2, "cm")) + 
-    theme(plot.caption = element_text(hjust=0, face = "bold", size = 9),
           legend.text = element_text(size = 9), 
-          legend.title = element_text(size =9), 
           axis.text = element_text(size = 9), 
           strip.text = element_text(size = 10)) + 
-    scale_linetype_manual(values = c(3,1), name = NULL) + 
     guides(color = guide_legend(direction = "vertical", order = 1), 
            fill = guide_legend(direction = "vertical", order = 1), 
-           alpha = guide_legend(direction = "vertical", order = 1), 
-           linetype = guide_legend(order = 2), 
-           shape = guide_legend(order = 3))) 
-
+           linetype = guide_legend(direction = "vertical", order = 1)))
 
